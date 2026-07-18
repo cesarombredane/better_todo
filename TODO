@@ -1,0 +1,5 @@
+feature to add :
+- a main TODO window that display a ll task for the next 2 weeks. i can add a task for a specific date (default today), order them freely within the day. i can move a task to another day by dragging and dropping it. I can also mark tasks as completed or delete them. 
+- secondary windows as part of the main window that display a calendar view of the tasks, allowing me to see my schedule at a glance.
+- another feature to add and delete more basic todo list that will only be a text list of tasks without the calendar view. i will need to be able to create parts in these files.
+- a basic todo can be created "locked" so i will need a password to unlock it and make changes. (it implies a password management system to set and verify passwords for locked todo lists).
