@@ -1,78 +1,100 @@
 # Better Todo
 
-An Android-first task and list application built with Flutter. The current home
-page displays `TEST`.
+An Android task and list application built with Flutter.
 
-## Launch the app
+## Run on an Android phone
 
-Install the project dependencies:
+The phone and computer must be connected to the same local network. Wireless
+debugging requires Android 11 or newer.
+
+### First connection
+
+1. On the phone, enable **Developer options** by tapping **Build number** seven
+   times under **Settings > About phone**.
+2. Open **Developer options > Wireless debugging** and enable it.
+3. Select **Pair device with pairing code**.
+4. In WSL, pair using the address and pairing port displayed by the phone:
 
 ```bash
-flutter pub get
+adb pair <phone-ip>:<pairing-port>
 ```
 
-List available Android devices:
+5. Return to the main Wireless debugging screen and connect using its separate
+   connection port:
 
 ```bash
+adb connect <phone-ip>:<connection-port>
+```
+
+Check that Flutter detects the phone:
+
+```bash
+adb devices
 flutter devices
 ```
 
-Launch the app on a connected phone or Android emulator:
+If `adb pair` reports `unknown host service`, ensure the current Android SDK
+version of ADB is selected:
 
 ```bash
+export PATH="$HOME/Android/Sdk/platform-tools:$PATH"
+hash -r
+```
+
+### Start development
+
+Install dependencies and launch the app:
+
+```bash
+flutter pub get
 flutter run
 ```
 
-If several devices are available, select one explicitly:
+If multiple devices are available:
 
 ```bash
 flutter run -d <device-id>
 ```
 
-While the app is running, save a Dart file in VS Code to hot reload it. In the
-terminal, press `r` for hot reload, `R` for hot restart, and `q` to stop.
+While Flutter is running:
 
-## Build the APK
+- Save a Dart file or press `r` for hot reload.
+- Press `R` for hot restart.
+- Press `q` to stop.
 
-Create an optimized release APK:
+For later sessions, pairing is normally unnecessary. Re-enable Wireless
+debugging, use its current connection address, and run:
 
 ```bash
-flutter build apk --release
+adb connect <phone-ip>:<connection-port>
+flutter run
 ```
 
-The resulting file is:
+## Test and build
+
+Run all local checks and build debug and release APKs:
+
+```bash
+./scripts/test_and_build.sh
+```
+
+To also run the integration test on the connected phone:
+
+```bash
+./scripts/test_and_build.sh --device <device-id>
+```
+
+Find the device ID with `flutter devices`.
+
+Generated APKs:
 
 ```text
+build/app/outputs/flutter-apk/app-debug.apk
 build/app/outputs/flutter-apk/app-release.apk
 ```
 
-Install it on a connected Android device:
+Install the release APK manually with:
 
 ```bash
 adb install -r build/app/outputs/flutter-apk/app-release.apk
 ```
-
-To create a development APK instead:
-
-```bash
-flutter build apk --debug
-```
-
-The development APK is written to:
-
-```text
-build/app/outputs/flutter-apk/app-debug.apk
-```
-
-## Check the project
-
-Before building, run:
-
-```bash
-dart format --output=none --set-exit-if-changed .
-flutter analyze
-flutter test
-```
-
-The GitHub Actions workflow performs these checks, runs the Android integration
-test, builds the release APK, and uploads it as the `better-todo-apk` artifact.
