@@ -1,6 +1,17 @@
 # Better Todo
 
-A minimal Android application built with Flutter.
+A private Android todo, list, and scheduling application built with Flutter.
+All data is stored locally in SQLite.
+
+## Features
+
+- Scheduled lists with a two-week agenda and monthly calendar
+- Dated tasks with optional times, completion, editing, deletion, and ordering
+- Dragging scheduled tasks to another day
+- Regular todo lists with reorderable sections and todos
+- One pinned list for quick access
+- Simple password-locked lists with automatic relocking
+- Dark-only interface and offline storage
 
 ## Run on an Android phone
 
@@ -19,6 +30,9 @@ Connect using the separate address shown on the main Wireless debugging screen:
 adb connect <phone-ip>:<connection-port>
 flutter run
 ```
+
+Open the side menu to create and manage lists. Scheduled lists provide agenda
+and calendar views; regular lists provide optional sections.
 
 While Flutter is running, save a Dart file or press `r` for hot reload. Press
 `R` for hot restart and `q` to stop.
