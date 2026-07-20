@@ -6,6 +6,10 @@ abstract final class AppColors {
   static const yellowMuted = Color(0xFFA89045);
   static const yellowSoft = Color(0xFFE2CE83);
 
+  // Status indicators.
+  static const locked = Color(0xFFD86666);
+  static const unlocked = Color(0xFF68C28A);
+
   // Dark surfaces.
   static const background = Color(0xFF11110F);
   static const surface = Color(0xFF181816);

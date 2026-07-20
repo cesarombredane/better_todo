@@ -14,12 +14,12 @@ final class AppController extends ChangeNotifier {
   List<ListSectionModel> sections = [];
   List<ScheduledTodoModel> scheduledTodos = [];
   List<RegularTodoModel> regularTodos = [];
-  final Set<int> unlockedListIds = {};
 
   int? selectedListId;
   String? password;
   String? error;
   bool isLoading = true;
+  bool isUnlocked = false;
   ScheduleView scheduleView = ScheduleView.list;
   DateTime selectedCalendarDay = _dateOnly(DateTime.now());
   DateTime visibleMonth = DateTime(DateTime.now().year, DateTime.now().month);
@@ -104,6 +104,7 @@ final class AppController extends ChangeNotifier {
   }
 
   Future<void> renameList(TodoListModel list, String name) async {
+    if (list.isLocked && !isUnlocked) return;
     await _run(() async {
       await _repository.updateList(list, name: name);
       await _reloadLists();
@@ -111,18 +112,17 @@ final class AppController extends ChangeNotifier {
   }
 
   Future<void> setListLocked(TodoListModel list, bool locked) async {
+    if (list.isLocked && !locked && !isUnlocked) return;
     await _run(() async {
       await _repository.updateList(list, isLocked: locked);
-      if (locked) unlockedListIds.remove(list.id);
       await _reloadLists();
     });
   }
 
   Future<void> deleteList(TodoListModel list) async {
-    if (list.isScheduled) return;
+    if (list.isScheduled || (list.isLocked && !isUnlocked)) return;
     await _run(() async {
       await _repository.deleteList(list.id);
-      unlockedListIds.remove(list.id);
       await _reloadLists();
       if (selectedListId == list.id) {
         selectedListId = lists.firstOrNull?.id;
@@ -154,12 +154,11 @@ final class AppController extends ChangeNotifier {
     lists = await _repository.getLists();
   }
 
-  bool canOpen(TodoListModel list) =>
-      !list.isLocked || unlockedListIds.contains(list.id);
+  bool canOpen(TodoListModel list) => !list.isLocked || isUnlocked;
 
-  bool unlock(TodoListModel list, String attempt) {
+  bool unlockAll(String attempt) {
     if (password == null || password!.isEmpty || attempt == password) {
-      unlockedListIds.add(list.id);
+      isUnlocked = true;
       notifyListeners();
       return true;
     }
@@ -167,7 +166,7 @@ final class AppController extends ChangeNotifier {
   }
 
   void lockAll() {
-    unlockedListIds.clear();
+    isUnlocked = false;
     notifyListeners();
   }
 
@@ -176,7 +175,7 @@ final class AppController extends ChangeNotifier {
       final normalized = value?.trim();
       password = normalized == null || normalized.isEmpty ? null : normalized;
       await _repository.setPassword(password);
-      if (password == null) unlockedListIds.clear();
+      if (password == null) isUnlocked = false;
     });
   }
 

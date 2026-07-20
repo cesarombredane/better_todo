@@ -1,8 +1,4 @@
 fix :
-- we can remove lock without having to type the password
-- fix: the only way to unlock app is to click a button unlock and type the password once. it unlock all the locked list and the ability to unlock list. the button then become relock all and relock all list and the abylity to delock a list on press.
-- also, the icon for locked list should be a lock icon and not change to a normal list icon when delocked. only a small color dot should show if it is curently locked or no
-
 - validate a todo delete it (validation modal)
 - in the calendar, see which day is today
 - visual issue on reorder

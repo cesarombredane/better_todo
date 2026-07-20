@@ -108,29 +108,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (!controller.canOpen(list)) {
       return _MessageView(
         icon: Icons.lock_outline,
-        message: '${list.name} is locked.',
-        actionLabel: 'Unlock',
-        onAction: () => _unlockSelected(context),
+        message:
+            '${list.name} is locked. Unlock protected lists from the menu.',
       );
     }
     return list.isScheduled
         ? SchedulePage(controller: controller)
         : RegularListPage(controller: controller);
-  }
-
-  Future<void> _unlockSelected(BuildContext context) async {
-    final list = controller.selectedList;
-    if (list == null) return;
-    final value = await showPasswordDialog(
-      context,
-      title: 'Unlock ${list.name}',
-    );
-    if (value == null || !context.mounted) return;
-    if (!controller.unlock(list, value)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Incorrect password')));
-    }
   }
 
   Future<void> _addScheduledTodo(BuildContext context) async {

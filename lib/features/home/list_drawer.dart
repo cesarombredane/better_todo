@@ -88,14 +88,16 @@ final class ListDrawer extends StatelessWidget {
               ),
               onTap: () => _managePassword(context),
             ),
-            if (controller.password != null)
+            if (controller.password != null &&
+                controller.lists.any((list) => list.isLocked))
               ListTile(
-                leading: const Icon(Icons.lock_reset_outlined),
-                title: const Text('Lock all lists'),
-                onTap: () {
-                  controller.lockAll();
-                  Navigator.pop(context);
-                },
+                leading: Icon(
+                  controller.isUnlocked
+                      ? Icons.lock_outline
+                      : Icons.lock_open_outlined,
+                ),
+                title: Text(controller.isUnlocked ? 'Relock all' : 'Unlock'),
+                onTap: () => _toggleLockSession(context),
               ),
           ],
         ),
@@ -143,6 +145,25 @@ final class ListDrawer extends StatelessWidget {
     );
     if (value != null) await controller.changePassword(value);
   }
+
+  Future<void> _toggleLockSession(BuildContext context) async {
+    if (controller.isUnlocked) {
+      controller.lockAll();
+      return;
+    }
+
+    final value = await showPasswordDialog(
+      context,
+      title: 'Unlock protected lists',
+    );
+    if (value == null || !context.mounted) return;
+    if (!controller.unlockAll(value)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Incorrect password')));
+      return;
+    }
+  }
 }
 
 final class _ListEntry extends StatelessWidget {
@@ -162,50 +183,68 @@ final class _ListEntry extends StatelessWidget {
     return ListTile(
       selected: selected,
       selectedTileColor: AppColors.surfaceRaised,
-      leading: Icon(
-        list.isLocked && !controller.canOpen(list)
-            ? Icons.lock_outline
-            : list.isScheduled
-            ? Icons.calendar_month_outlined
-            : Icons.checklist_outlined,
-        color: list.isPinned ? AppColors.yellow : null,
-      ),
+      leading: list.isLocked
+          ? Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  Icons.lock_outline,
+                  color: list.isPinned ? AppColors.yellow : null,
+                ),
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: controller.isUnlocked
+                          ? AppColors.unlocked
+                          : AppColors.locked,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : Icon(
+              list.isScheduled
+                  ? Icons.calendar_month_outlined
+                  : Icons.checklist_outlined,
+              color: list.isPinned ? AppColors.yellow : null,
+            ),
       title: Text(list.name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: list.isPinned ? const Text('Pinned') : null,
       onTap: () => _open(context),
       trailing: PopupMenuButton<String>(
         onSelected: (action) => _handleAction(context, action),
         itemBuilder: (context) => [
-          const PopupMenuItem(value: 'rename', child: Text('Rename')),
+          PopupMenuItem(
+            value: 'rename',
+            enabled: !list.isLocked || controller.isUnlocked,
+            child: const Text('Rename'),
+          ),
           PopupMenuItem(
             value: 'pin',
             child: Text(list.isPinned ? 'Unpin' : 'Pin'),
           ),
           PopupMenuItem(
             value: 'lock',
+            enabled: !list.isLocked || controller.isUnlocked,
             child: Text(list.isLocked ? 'Remove lock' : 'Lock'),
           ),
           if (!list.isScheduled)
-            const PopupMenuItem(value: 'delete', child: Text('Delete')),
+            PopupMenuItem(
+              value: 'delete',
+              enabled: !list.isLocked || controller.isUnlocked,
+              child: const Text('Delete'),
+            ),
         ],
       ),
     );
   }
 
   Future<void> _open(BuildContext context) async {
-    if (!controller.canOpen(list)) {
-      final value = await showPasswordDialog(
-        context,
-        title: 'Unlock ${list.name}',
-      );
-      if (value == null || !context.mounted) return;
-      if (!controller.unlock(list, value)) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Incorrect password')));
-        return;
-      }
-    }
     await controller.selectList(list);
     if (context.mounted) Navigator.pop(context);
   }
@@ -213,6 +252,7 @@ final class _ListEntry extends StatelessWidget {
   Future<void> _handleAction(BuildContext context, String action) async {
     switch (action) {
       case 'rename':
+        if (list.isLocked && !controller.isUnlocked) return;
         final value = await showTextDialog(
           context,
           title: 'Rename list',
@@ -232,7 +272,9 @@ final class _ListEntry extends StatelessWidget {
         }
         await controller.setListLocked(list, !list.isLocked);
       case 'delete':
-        if (list.isScheduled) return;
+        if (list.isScheduled || (list.isLocked && !controller.isUnlocked)) {
+          return;
+        }
         final confirmed = await showConfirmDialog(
           context,
           title: 'Delete ${list.name}?',
