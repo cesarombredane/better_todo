@@ -282,7 +282,7 @@ final class _RegularTodoTile extends StatelessWidget {
           ? null
           : Checkbox(
               value: todo.isCompleted,
-              onChanged: (_) => controller.toggleRegularTodo(todo),
+              onChanged: (_) => _validate(context),
             ),
       title: Text(
         todo.content,
@@ -296,36 +296,25 @@ final class _RegularTodoTile extends StatelessWidget {
         ),
       ),
       onTap: () => _edit(context),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ReorderableDragStartListener(
-            index: index,
-            child: const Padding(
-              padding: EdgeInsets.all(8),
-              child: Icon(Icons.drag_handle),
-            ),
-          ),
-          PopupMenuButton<String>(
-            onSelected: (action) {
-              if (action == 'edit') _edit(context);
-              if (action == 'delete') _delete(context);
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'edit', child: Text('Edit / move')),
-              PopupMenuItem(value: 'delete', child: Text('Delete')),
-            ],
-          ),
-        ],
+      trailing: ReorderableDragStartListener(
+        index: index,
+        child: const Padding(
+          padding: EdgeInsets.all(8),
+          child: Icon(Icons.drag_handle),
+        ),
       ),
     );
   }
 
   Future<void> _edit(BuildContext context) async {
+    final isInformationList = controller.selectedList?.isLocked ?? false;
     final value = await showRegularTodoDialog(
       context,
       sections: controller.sections,
       todo: todo,
+      onDelete: isInformationList
+          ? () => controller.deleteRegularTodo(todo)
+          : null,
     );
     if (value != null) {
       await controller.editRegularTodo(
@@ -336,11 +325,12 @@ final class _RegularTodoTile extends StatelessWidget {
     }
   }
 
-  Future<void> _delete(BuildContext context) async {
+  Future<void> _validate(BuildContext context) async {
     final confirmed = await showConfirmDialog(
       context,
-      title: 'Delete todo?',
-      message: todo.content,
+      title: 'Validate todo?',
+      message: 'This will permanently delete "${todo.content}".',
+      confirmLabel: 'Validate',
     );
     if (confirmed) await controller.deleteRegularTodo(todo);
   }

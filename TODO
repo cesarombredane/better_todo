@@ -1,9 +1,5 @@
-fix :
-- validate a todo delete it (validation modal)
-- in the calendar, see which day is today
-- visual issue on reorder
-
 feature to add :
 - create sub todos to decompose an action into multiple small tasks (only within one day)
 - attribute a todo to a person (create a person entity or select an existing one)
 - boutton fier de moi a chaque jour
+- gamification ?

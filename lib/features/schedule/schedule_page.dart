@@ -159,7 +159,7 @@ final class _ScheduledTodoTile extends StatelessWidget {
       contentPadding: const EdgeInsets.only(left: 4, right: 8),
       leading: Checkbox(
         value: todo.isCompleted,
-        onChanged: (_) => controller.toggleScheduledTodo(todo),
+        onChanged: (_) => _validate(context),
       ),
       title: Text(
         todo.content,
@@ -174,42 +174,12 @@ final class _ScheduledTodoTile extends StatelessWidget {
           ? null
           : Text(_timeLabel(todo.scheduledMinute!)),
       onTap: () => _edit(context),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          LongPressDraggable<ScheduledTodoModel>(
-            data: todo,
-            feedback: Material(
-              color: AppColors.surfaceRaised,
-              borderRadius: BorderRadius.circular(12),
-              child: SizedBox(
-                width: 240,
-                child: ListTile(title: Text(todo.content)),
-              ),
-            ),
-            child: const Padding(
-              padding: EdgeInsets.all(8),
-              child: Icon(Icons.calendar_today_outlined, size: 19),
-            ),
-          ),
-          ReorderableDragStartListener(
-            index: index,
-            child: const Padding(
-              padding: EdgeInsets.all(8),
-              child: Icon(Icons.drag_handle, size: 20),
-            ),
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'edit') _edit(context);
-              if (value == 'delete') _delete(context);
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'edit', child: Text('Edit')),
-              PopupMenuItem(value: 'delete', child: Text('Delete')),
-            ],
-          ),
-        ],
+      trailing: ReorderableDragStartListener(
+        index: index,
+        child: const Padding(
+          padding: EdgeInsets.all(8),
+          child: Icon(Icons.drag_handle, size: 20),
+        ),
       ),
     );
     return tile;
@@ -227,11 +197,12 @@ final class _ScheduledTodoTile extends StatelessWidget {
     }
   }
 
-  Future<void> _delete(BuildContext context) async {
+  Future<void> _validate(BuildContext context) async {
     final confirmed = await showConfirmDialog(
       context,
-      title: 'Delete task?',
-      message: todo.content,
+      title: 'Validate task?',
+      message: 'This will permanently delete "${todo.content}".',
+      confirmLabel: 'Validate',
     );
     if (confirmed) await controller.deleteScheduledTodo(todo);
   }
@@ -244,6 +215,7 @@ final class _CalendarView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final today = _dateOnly(DateTime.now());
     final month = controller.visibleMonth;
     final first = DateTime(month.year, month.month);
     final gridStart = first.subtract(Duration(days: first.weekday - 1));
@@ -304,6 +276,7 @@ final class _CalendarView extends StatelessWidget {
             final count = controller.scheduledForDay(day).length;
             final selected =
                 databaseDay(day) == databaseDay(controller.selectedCalendarDay);
+            final isToday = databaseDay(day) == databaseDay(today);
             final currentMonth = day.month == month.month;
             return InkWell(
               borderRadius: BorderRadius.circular(24),
@@ -313,6 +286,14 @@ final class _CalendarView extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: selected ? AppColors.yellow : Colors.transparent,
                   shape: BoxShape.circle,
+                  border: isToday
+                      ? Border.all(
+                          color: selected
+                              ? AppColors.yellowSoft
+                              : AppColors.yellow,
+                          width: 2,
+                        )
+                      : null,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

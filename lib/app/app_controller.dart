@@ -234,16 +234,6 @@ final class AppController extends ChangeNotifier {
     });
   }
 
-  Future<void> toggleScheduledTodo(ScheduledTodoModel todo) async {
-    await _run(() async {
-      await _repository.updateScheduledTodo(
-        todo,
-        isCompleted: !todo.isCompleted,
-      );
-      await _loadSelectedContent();
-    });
-  }
-
   Future<void> deleteScheduledTodo(ScheduledTodoModel todo) async {
     await _run(() async {
       await _repository.deleteScheduledTodo(todo.id);
@@ -266,11 +256,21 @@ final class AppController extends ChangeNotifier {
     final items = scheduledForDay(day);
     final item = items.removeAt(oldIndex);
     items.insert(newIndex, item);
+
+    final reorderedTodos = [...scheduledTodos];
+    var reorderedIndex = 0;
+    for (var index = 0; index < reorderedTodos.length; index++) {
+      if (databaseDay(reorderedTodos[index].scheduledDay) == databaseDay(day)) {
+        reorderedTodos[index] = items[reorderedIndex++];
+      }
+    }
+    scheduledTodos = reorderedTodos;
+    notifyListeners();
+
     await _run(() async {
       await _repository.reorderScheduledTodos(
         items.map((todo) => todo.id).toList(),
       );
-      await _loadSelectedContent();
     });
   }
 
@@ -298,9 +298,12 @@ final class AppController extends ChangeNotifier {
   }
 
   Future<void> reorderSections(List<int> ids) async {
+    final sectionsById = {for (final section in sections) section.id: section};
+    sections = ids.map((id) => sectionsById[id]!).toList();
+    notifyListeners();
+
     await _run(() async {
       await _repository.reorderSections(ids);
-      await _loadSelectedContent();
     });
   }
 
@@ -336,13 +339,6 @@ final class AppController extends ChangeNotifier {
     });
   }
 
-  Future<void> toggleRegularTodo(RegularTodoModel todo) async {
-    await _run(() async {
-      await _repository.updateRegularTodo(todo, isCompleted: !todo.isCompleted);
-      await _loadSelectedContent();
-    });
-  }
-
   Future<void> deleteRegularTodo(RegularTodoModel todo) async {
     await _run(() async {
       await _repository.deleteRegularTodo(todo.id);
@@ -360,11 +356,21 @@ final class AppController extends ChangeNotifier {
         .toList();
     final item = items.removeAt(oldIndex);
     items.insert(newIndex, item);
+
+    final reorderedTodos = [...regularTodos];
+    var reorderedIndex = 0;
+    for (var index = 0; index < reorderedTodos.length; index++) {
+      if (reorderedTodos[index].sectionId == sectionId) {
+        reorderedTodos[index] = items[reorderedIndex++];
+      }
+    }
+    regularTodos = reorderedTodos;
+    notifyListeners();
+
     await _run(() async {
       await _repository.reorderRegularTodos(
         items.map((todo) => todo.id).toList(),
       );
-      await _loadSelectedContent();
     });
   }
 

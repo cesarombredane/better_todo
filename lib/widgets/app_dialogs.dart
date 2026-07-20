@@ -252,6 +252,7 @@ Future<RegularTodoValue?> showRegularTodoDialog(
   required List<ListSectionModel> sections,
   RegularTodoModel? todo,
   int? initialSectionId,
+  Future<void> Function()? onDelete,
 }) {
   var content = todo?.content ?? '';
   var sectionId = todo?.sectionId ?? initialSectionId;
@@ -296,6 +297,20 @@ Future<RegularTodoValue?> showRegularTodoDialog(
           ),
         ),
         actions: [
+          if (todo != null && onDelete != null)
+            TextButton(
+              onPressed: () async {
+                final confirmed = await showConfirmDialog(
+                  dialogContext,
+                  title: 'Delete information?',
+                  message: 'This will permanently delete "${todo.content}".',
+                );
+                if (!confirmed || !dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+                await onDelete();
+              },
+              child: const Text('Delete'),
+            ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
