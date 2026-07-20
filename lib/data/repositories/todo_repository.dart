@@ -25,6 +25,7 @@ final class TodoRepository {
     required String name,
     required bool isScheduled,
     bool isLocked = false,
+    bool isPinned = false,
   }) async {
     final database = await _db;
     final position = Sqflite.firstIntValue(
@@ -36,7 +37,7 @@ final class TodoRepository {
       'name': name.trim(),
       'is_scheduled': isScheduled ? 1 : 0,
       'is_locked': isLocked ? 1 : 0,
-      'is_pinned': 0,
+      'is_pinned': isPinned ? 1 : 0,
       'sort_position': position ?? 1000,
       'created_at': _now,
       'updated_at': _now,

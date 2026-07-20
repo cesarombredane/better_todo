@@ -7,7 +7,7 @@ final class AppDatabase {
   static final AppDatabase instance = AppDatabase._();
 
   static const _fileName = 'better_todo.db';
-  static const _version = 1;
+  static const _version = 2;
 
   Database? _database;
 
@@ -23,6 +23,7 @@ final class AppDatabase {
       version: _version,
       onConfigure: _configure,
       onCreate: _createSchema,
+      onUpgrade: _upgradeSchema,
     );
   }
 
@@ -115,6 +116,25 @@ final class AppDatabase {
     ''');
 
     await batch.commit(noResult: true);
+  }
+
+  Future<void> _upgradeSchema(
+    Database database,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    if (oldVersion < 2) {
+      await database.rawUpdate('''
+        UPDATE todo_lists
+        SET is_pinned = 1
+        WHERE id = (
+          SELECT id FROM todo_lists WHERE is_scheduled = 1 LIMIT 1
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM todo_lists WHERE is_pinned = 1
+        )
+      ''');
+    }
   }
 
   Future<void> close() async {

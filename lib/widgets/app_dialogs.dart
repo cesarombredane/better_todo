@@ -1,7 +1,7 @@
 import 'package:better_todo/data/models/todo_models.dart';
 import 'package:flutter/material.dart';
 
-typedef NewListValue = ({String name, bool isScheduled, bool isLocked});
+typedef NewListValue = ({String name, bool isLocked});
 typedef ScheduledTodoValue = ({String content, DateTime day, int? minute});
 typedef RegularTodoValue = ({String content, int? sectionId});
 
@@ -73,7 +73,6 @@ Future<bool> showConfirmDialog(
 
 Future<NewListValue?> showNewListDialog(BuildContext context) {
   var name = '';
-  var isScheduled = false;
   var isLocked = false;
   return showDialog<NewListValue>(
     context: context,
@@ -88,14 +87,6 @@ Future<NewListValue?> showNewListDialog(BuildContext context) {
                 autofocus: true,
                 decoration: const InputDecoration(labelText: 'List name'),
                 onChanged: (value) => name = value,
-              ),
-              const SizedBox(height: 12),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Scheduled list'),
-                subtitle: const Text('Tasks use dates and calendar views'),
-                value: isScheduled,
-                onChanged: (value) => setState(() => isScheduled = value),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
@@ -116,7 +107,6 @@ Future<NewListValue?> showNewListDialog(BuildContext context) {
               if (name.trim().isEmpty) return;
               Navigator.pop(dialogContext, (
                 name: name.trim(),
-                isScheduled: isScheduled,
                 isLocked: isLocked,
               ));
             },

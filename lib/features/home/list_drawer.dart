@@ -11,6 +11,13 @@ final class ListDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pinnedLists = controller.lists
+        .where((list) => list.isPinned)
+        .toList();
+    final otherLists = controller.lists
+        .where((list) => !list.isPinned)
+        .toList();
+
     return Drawer(
       backgroundColor: AppColors.surface,
       child: SafeArea(
@@ -31,19 +38,39 @@ final class ListDrawer extends StatelessWidget {
             Expanded(
               child: controller.lists.isEmpty
                   ? const Center(child: Text('No lists yet'))
-                  : ReorderableListView.builder(
-                      padding: EdgeInsets.zero,
-                      itemCount: controller.lists.length,
-                      onReorderItem: controller.reorderLists,
-                      itemBuilder: (context, index) {
-                        final list = controller.lists[index];
-                        return _ListEntry(
-                          key: ValueKey(list.id),
-                          list: list,
-                          selected: list.id == controller.selectedListId,
-                          controller: controller,
-                        );
-                      },
+                  : Column(
+                      children: [
+                        for (final list in pinnedLists)
+                          _ListEntry(
+                            key: ValueKey(list.id),
+                            list: list,
+                            selected: list.id == controller.selectedListId,
+                            controller: controller,
+                          ),
+                        if (pinnedLists.isNotEmpty && otherLists.isNotEmpty)
+                          const Divider(height: 1, indent: 16, endIndent: 16),
+                        Expanded(
+                          child: ReorderableListView.builder(
+                            padding: EdgeInsets.zero,
+                            itemCount: otherLists.length,
+                            onReorderItem: (oldIndex, newIndex) {
+                              controller.reorderLists(
+                                oldIndex + pinnedLists.length,
+                                newIndex + pinnedLists.length,
+                              );
+                            },
+                            itemBuilder: (context, index) {
+                              final list = otherLists[index];
+                              return _ListEntry(
+                                key: ValueKey(list.id),
+                                list: list,
+                                selected: list.id == controller.selectedListId,
+                                controller: controller,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
             ),
             const Divider(height: 1),
@@ -87,11 +114,7 @@ final class ListDrawer extends StatelessWidget {
       if (password == null || !context.mounted) return;
       await controller.changePassword(password);
     }
-    await controller.createList(
-      name: value.name,
-      isScheduled: value.isScheduled,
-      isLocked: value.isLocked,
-    );
+    await controller.createList(name: value.name, isLocked: value.isLocked);
     if (context.mounted) Navigator.pop(context);
   }
 
@@ -162,7 +185,8 @@ final class _ListEntry extends StatelessWidget {
             value: 'lock',
             child: Text(list.isLocked ? 'Remove lock' : 'Lock'),
           ),
-          const PopupMenuItem(value: 'delete', child: Text('Delete')),
+          if (!list.isScheduled)
+            const PopupMenuItem(value: 'delete', child: Text('Delete')),
         ],
       ),
     );
@@ -208,6 +232,7 @@ final class _ListEntry extends StatelessWidget {
         }
         await controller.setListLocked(list, !list.isLocked);
       case 'delete':
+        if (list.isScheduled) return;
         final confirmed = await showConfirmDialog(
           context,
           title: 'Delete ${list.name}?',

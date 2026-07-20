@@ -38,8 +38,12 @@ final class AppController extends ChangeNotifier {
     await _run(() async {
       password = await _repository.getPassword();
       lists = await _repository.getLists();
-      if (lists.isEmpty) {
-        await _repository.createList(name: 'Schedule', isScheduled: true);
+      if (!lists.any((list) => list.isScheduled)) {
+        await _repository.createList(
+          name: 'Schedule',
+          isScheduled: true,
+          isPinned: true,
+        );
         lists = await _repository.getLists();
       }
       selectedListId =
@@ -85,13 +89,12 @@ final class AppController extends ChangeNotifier {
 
   Future<void> createList({
     required String name,
-    required bool isScheduled,
     required bool isLocked,
   }) async {
     await _run(() async {
       final id = await _repository.createList(
         name: name,
-        isScheduled: isScheduled,
+        isScheduled: false,
         isLocked: isLocked,
       );
       await _reloadLists();
@@ -116,6 +119,7 @@ final class AppController extends ChangeNotifier {
   }
 
   Future<void> deleteList(TodoListModel list) async {
+    if (list.isScheduled) return;
     await _run(() async {
       await _repository.deleteList(list.id);
       unlockedListIds.remove(list.id);

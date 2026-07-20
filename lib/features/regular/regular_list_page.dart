@@ -275,17 +275,22 @@ final class _RegularTodoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isInformationList = controller.selectedList?.isLocked ?? false;
     return ListTile(
       contentPadding: const EdgeInsets.only(left: 4, right: 8),
-      leading: Checkbox(
-        value: todo.isCompleted,
-        onChanged: (_) => controller.toggleRegularTodo(todo),
-      ),
+      leading: isInformationList
+          ? null
+          : Checkbox(
+              value: todo.isCompleted,
+              onChanged: (_) => controller.toggleRegularTodo(todo),
+            ),
       title: Text(
         todo.content,
         style: TextStyle(
-          decoration: todo.isCompleted ? TextDecoration.lineThrough : null,
-          color: todo.isCompleted
+          decoration: !isInformationList && todo.isCompleted
+              ? TextDecoration.lineThrough
+              : null,
+          color: !isInformationList && todo.isCompleted
               ? AppColors.textDisabled
               : AppColors.textPrimary,
         ),
