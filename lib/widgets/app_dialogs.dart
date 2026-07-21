@@ -265,7 +265,7 @@ Future<ScheduledTodoValue?> showScheduledTodoDialog(
       initialAssigneeId ??
       (persons.isEmpty ? null : persons.first.id);
   final subtasks = [...initialSubtasks];
-  final subtaskEndKey = GlobalKey();
+  final scrollKey = GlobalKey<_DialogScrollViewState>();
   var day = todo?.scheduledDay ?? initialDay ?? DateTime.now();
   TimeOfDay? time = todo?.scheduledMinute == null
       ? null
@@ -279,7 +279,8 @@ Future<ScheduledTodoValue?> showScheduledTodoDialog(
     builder: (dialogContext) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
         title: Text(todo == null ? 'New scheduled task' : 'Edit task'),
-        content: SingleChildScrollView(
+        content: _DialogScrollView(
+          key: scrollKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -353,7 +354,7 @@ Future<ScheduledTodoValue?> showScheduledTodoDialog(
                 _SubtaskEditor(
                   subtasks: subtasks,
                   setState: setState,
-                  endKey: subtaskEndKey,
+                  onAdded: () => scrollKey.currentState?.scrollToBottom(),
                 ),
             ],
           ),
@@ -403,13 +404,14 @@ Future<RegularTodoValue?> showRegularTodoDialog(
       (persons.isEmpty ? null : persons.first.id);
   var sectionId = todo?.sectionId ?? initialSectionId;
   final subtasks = [...initialSubtasks];
-  final subtaskEndKey = GlobalKey();
+  final scrollKey = GlobalKey<_DialogScrollViewState>();
   return showDialog<RegularTodoValue>(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
         title: Text(todo == null ? 'New todo' : 'Edit todo'),
-        content: SingleChildScrollView(
+        content: _DialogScrollView(
+          key: scrollKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -470,7 +472,7 @@ Future<RegularTodoValue?> showRegularTodoDialog(
                 _SubtaskEditor(
                   subtasks: subtasks,
                   setState: setState,
-                  endKey: subtaskEndKey,
+                  onAdded: () => scrollKey.currentState?.scrollToBottom(),
                 ),
             ],
           ),
@@ -519,12 +521,12 @@ final class _SubtaskEditor extends StatelessWidget {
   const _SubtaskEditor({
     required this.subtasks,
     required this.setState,
-    required this.endKey,
+    required this.onAdded,
   });
 
   final List<TodoSubtaskDraft> subtasks;
   final StateSetter setState;
-  final GlobalKey endKey;
+  final VoidCallback onAdded;
 
   @override
   Widget build(BuildContext context) {
@@ -583,12 +585,12 @@ final class _SubtaskEditor extends StatelessWidget {
               ),
             ],
           ),
-        SizedBox(key: endKey, height: 1),
       ],
     );
   }
 
   Future<void> _add(BuildContext context) async {
+    FocusScope.of(context).unfocus();
     final content = await showTextDialog(
       context,
       title: 'New subtask',
@@ -600,17 +602,7 @@ final class _SubtaskEditor extends StatelessWidget {
       () =>
           subtasks.add(TodoSubtaskDraft(content: content, isCompleted: false)),
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final context = endKey.currentContext;
-      if (context != null) {
-        Scrollable.ensureVisible(
-          context,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-          alignment: 1,
-        );
-      }
-    });
+    onAdded();
   }
 
   Future<void> _edit(BuildContext context, int index) async {
@@ -628,6 +620,48 @@ final class _SubtaskEditor extends StatelessWidget {
         isCompleted: subtask.isCompleted,
       );
     });
+  }
+}
+
+final class _DialogScrollView extends StatefulWidget {
+  const _DialogScrollView({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  State<_DialogScrollView> createState() => _DialogScrollViewState();
+}
+
+final class _DialogScrollViewState extends State<_DialogScrollView> {
+  final ScrollController _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void scrollToBottom() {
+    _scrollAfterLayout();
+    Future<void>.delayed(const Duration(milliseconds: 350), () {
+      if (mounted) _scrollAfterLayout();
+    });
+  }
+
+  void _scrollAfterLayout() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_controller.hasClients) return;
+      _controller.animateTo(
+        _controller.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(controller: _controller, child: widget.child);
   }
 }
 
