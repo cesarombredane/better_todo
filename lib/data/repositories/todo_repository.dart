@@ -134,6 +134,37 @@ final class TodoRepository {
     });
   }
 
+  Future<void> deletePerson(int personId) async {
+    final database = await _db;
+    await database.transaction((transaction) async {
+      final ownerRows = await transaction.query(
+        'persons',
+        columns: ['id'],
+        where: 'is_owner = 1',
+        limit: 1,
+      );
+      if (ownerRows.isEmpty || ownerRows.first['id'] == personId) return;
+      final ownerId = ownerRows.first['id']! as int;
+      await transaction.update(
+        'scheduled_todos',
+        {'assignee_id': ownerId, 'updated_at': _now},
+        where: 'assignee_id = ?',
+        whereArgs: [personId],
+      );
+      await transaction.update(
+        'regular_todos',
+        {'assignee_id': ownerId, 'updated_at': _now},
+        where: 'assignee_id = ?',
+        whereArgs: [personId],
+      );
+      await transaction.delete(
+        'persons',
+        where: 'id = ? AND is_owner = 0',
+        whereArgs: [personId],
+      );
+    });
+  }
+
   Future<List<DailyPrideModel>> getDailyPride() async {
     final database = await _db;
     final rows = await database.query('daily_pride', orderBy: 'day ASC');

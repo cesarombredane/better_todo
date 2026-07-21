@@ -80,9 +80,9 @@ final class ListDrawer extends StatelessWidget {
               onTap: () => _createList(context),
             ),
             ListTile(
-              leading: const Icon(Icons.person_add_outlined),
-              title: const Text('Add person'),
-              onTap: () => _addPerson(context),
+              leading: const Icon(Icons.group_outlined),
+              title: const Text('Manage people'),
+              onTap: () => _managePeople(context),
             ),
             ListTile(
               leading: const Icon(Icons.password_outlined),
@@ -125,13 +125,11 @@ final class ListDrawer extends StatelessWidget {
     if (context.mounted) Navigator.pop(context);
   }
 
-  Future<void> _addPerson(BuildContext context) async {
-    final name = await showTextDialog(
-      context,
-      title: 'Add person',
-      label: 'Name',
+  Future<void> _managePeople(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => _ManagePeopleDialog(controller: controller),
     );
-    if (name != null) await controller.createPerson(name);
   }
 
   Future<void> _managePassword(BuildContext context) async {
@@ -177,6 +175,82 @@ final class ListDrawer extends StatelessWidget {
       ).showSnackBar(const SnackBar(content: Text('Incorrect password')));
       return;
     }
+  }
+}
+
+final class _ManagePeopleDialog extends StatefulWidget {
+  const _ManagePeopleDialog({required this.controller});
+
+  final AppController controller;
+
+  @override
+  State<_ManagePeopleDialog> createState() => _ManagePeopleDialogState();
+}
+
+final class _ManagePeopleDialogState extends State<_ManagePeopleDialog> {
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Manage people'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: widget.controller.persons.length,
+          itemBuilder: (context, index) {
+            final person = widget.controller.persons[index];
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                person.isOwner ? Icons.person : Icons.person_outline,
+              ),
+              title: Text(person.name),
+              subtitle: person.isOwner ? const Text('App user') : null,
+              trailing: person.isOwner
+                  ? null
+                  : IconButton(
+                      tooltip: 'Delete ${person.name}',
+                      onPressed: () => _delete(person),
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton.icon(
+          onPressed: _add,
+          icon: const Icon(Icons.add),
+          label: const Text('Add person'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _add() async {
+    final name = await showTextDialog(
+      context,
+      title: 'Add person',
+      label: 'Name',
+    );
+    if (name == null || !mounted) return;
+    await widget.controller.createPerson(name);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _delete(PersonModel person) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Delete ${person.name}?',
+      message: 'Their tasks will be reassigned to Me.',
+    );
+    if (!confirmed || !mounted) return;
+    await widget.controller.deletePerson(person);
+    if (mounted) setState(() {});
   }
 }
 

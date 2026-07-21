@@ -159,6 +159,15 @@ final class AppController extends ChangeNotifier {
     });
   }
 
+  Future<void> deletePerson(PersonModel person) async {
+    if (person.isOwner) return;
+    await _run(() async {
+      await _repository.deletePerson(person.id);
+      persons = await _repository.getPersons();
+      await _loadSelectedContent();
+    });
+  }
+
   PrideAnswer? prideForDay(DateTime day) => dailyPride[databaseDay(day)];
 
   Future<void> setPrideForToday(PrideAnswer answer) async {
