@@ -2,6 +2,7 @@ import 'package:better_todo/app/app_controller.dart';
 import 'package:better_todo/data/models/todo_models.dart';
 import 'package:better_todo/theme/app_colors.dart';
 import 'package:better_todo/widgets/app_dialogs.dart';
+import 'package:better_todo/widgets/subtask_summary.dart';
 import 'package:flutter/material.dart';
 
 final class RegularListPage extends StatelessWidget {
@@ -139,6 +140,7 @@ final class _SectionCard extends StatelessWidget {
     if (value != null) {
       await controller.createRegularTodo(
         content: value.content,
+        description: value.description,
         sectionId: value.sectionId,
       );
     }
@@ -225,6 +227,7 @@ final class _TodoGroup extends StatelessWidget {
     if (value != null) {
       await controller.createRegularTodo(
         content: value.content,
+        description: value.description,
         sectionId: value.sectionId,
       );
     }
@@ -276,16 +279,29 @@ final class _RegularTodoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isInformationList = controller.selectedList?.isLocked ?? false;
+    final subtasks = controller.regularSubtasks[todo.id] ?? const [];
+    final hasDetails = todo.description != null || subtasks.isNotEmpty;
     return ListTile(
       contentPadding: const EdgeInsets.only(left: 4, right: 8),
+      titleAlignment: hasDetails
+          ? ListTileTitleAlignment.top
+          : ListTileTitleAlignment.center,
       leading: isInformationList
           ? null
-          : Checkbox(
-              value: todo.isCompleted,
-              onChanged: (_) => _validate(context),
+          : SizedBox(
+              width: 40,
+              height: 28,
+              child: Checkbox(
+                value: todo.isCompleted,
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                onChanged: (_) => _validate(context),
+              ),
             ),
       title: Text(
         todo.content,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           decoration: !isInformationList && todo.isCompleted
               ? TextDecoration.lineThrough
@@ -295,6 +311,23 @@ final class _RegularTodoTile extends StatelessWidget {
               : AppColors.textPrimary,
         ),
       ),
+      subtitle: todo.description == null && subtasks.isEmpty
+          ? null
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (todo.description != null)
+                  Text(
+                    todo.description!,
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                if (subtasks.isNotEmpty)
+                  SubtaskSummary(
+                    subtasks: subtasks,
+                    onToggle: controller.toggleSubtask,
+                  ),
+              ],
+            ),
       onTap: () => _edit(context),
       trailing: ReorderableDragStartListener(
         index: index,
@@ -308,10 +341,13 @@ final class _RegularTodoTile extends StatelessWidget {
 
   Future<void> _edit(BuildContext context) async {
     final isInformationList = controller.selectedList?.isLocked ?? false;
+    final subtasks = await controller.loadRegularSubtasks(todo.id);
+    if (!context.mounted) return;
     final value = await showRegularTodoDialog(
       context,
       sections: controller.sections,
       todo: todo,
+      initialSubtasks: subtasks,
       onDelete: isInformationList
           ? () => controller.deleteRegularTodo(todo)
           : null,
@@ -320,7 +356,9 @@ final class _RegularTodoTile extends StatelessWidget {
       await controller.editRegularTodo(
         todo,
         content: value.content,
+        description: value.description,
         sectionId: value.sectionId,
+        subtasks: value.subtasks,
       );
     }
   }

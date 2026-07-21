@@ -127,6 +127,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (value != null) {
       await controller.createScheduledTodo(
         content: value.content,
+        description: value.description,
         day: value.day,
         minute: value.minute,
       );
@@ -141,6 +142,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (value != null) {
       await controller.createRegularTodo(
         content: value.content,
+        description: value.description,
         sectionId: value.sectionId,
       );
     }

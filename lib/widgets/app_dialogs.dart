@@ -2,8 +2,21 @@ import 'package:better_todo/data/models/todo_models.dart';
 import 'package:flutter/material.dart';
 
 typedef NewListValue = ({String name, bool isLocked});
-typedef ScheduledTodoValue = ({String content, DateTime day, int? minute});
-typedef RegularTodoValue = ({String content, int? sectionId});
+typedef ScheduledTodoValue = ({
+  String content,
+  String? description,
+  DateTime day,
+  int? minute,
+  List<TodoSubtaskDraft> subtasks,
+});
+typedef RegularTodoValue = ({
+  String content,
+  String? description,
+  int? sectionId,
+  List<TodoSubtaskDraft> subtasks,
+});
+
+const _todoTitleMaxLength = 20;
 
 Future<String?> showTextDialog(
   BuildContext context, {
@@ -162,8 +175,12 @@ Future<ScheduledTodoValue?> showScheduledTodoDialog(
   BuildContext context, {
   ScheduledTodoModel? todo,
   DateTime? initialDay,
+  List<TodoSubtaskDraft> initialSubtasks = const [],
 }) {
   var content = todo?.content ?? '';
+  var description = todo?.description ?? '';
+  final subtasks = [...initialSubtasks];
+  final subtaskEndKey = GlobalKey();
   var day = todo?.scheduledDay ?? initialDay ?? DateTime.now();
   TimeOfDay? time = todo?.scheduledMinute == null
       ? null
@@ -183,11 +200,20 @@ Future<ScheduledTodoValue?> showScheduledTodoDialog(
             children: [
               TextFormField(
                 initialValue: content,
-                autofocus: true,
-                maxLines: 3,
-                minLines: 1,
-                decoration: const InputDecoration(labelText: 'Task'),
+                autofocus: todo == null,
+                maxLength: _todoTitleMaxLength,
+                maxLines: 1,
+                decoration: const InputDecoration(labelText: 'Title'),
                 onChanged: (value) => content = value,
+              ),
+              TextFormField(
+                initialValue: description,
+                maxLines: 4,
+                minLines: 1,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                ),
+                onChanged: (value) => description = value,
               ),
               const SizedBox(height: 12),
               ListTile(
@@ -222,6 +248,12 @@ Future<ScheduledTodoValue?> showScheduledTodoDialog(
                   if (selected != null) setState(() => time = selected);
                 },
               ),
+              if (todo != null)
+                _SubtaskEditor(
+                  subtasks: subtasks,
+                  setState: setState,
+                  endKey: subtaskEndKey,
+                ),
             ],
           ),
         ),
@@ -235,8 +267,12 @@ Future<ScheduledTodoValue?> showScheduledTodoDialog(
               if (content.trim().isEmpty) return;
               Navigator.pop(dialogContext, (
                 content: content.trim(),
+                description: description.trim().isEmpty
+                    ? null
+                    : description.trim(),
                 day: day,
                 minute: time == null ? null : time!.hour * 60 + time!.minute,
+                subtasks: [...subtasks],
               ));
             },
             child: const Text('Save'),
@@ -253,9 +289,13 @@ Future<RegularTodoValue?> showRegularTodoDialog(
   RegularTodoModel? todo,
   int? initialSectionId,
   Future<void> Function()? onDelete,
+  List<TodoSubtaskDraft> initialSubtasks = const [],
 }) {
   var content = todo?.content ?? '';
+  var description = todo?.description ?? '';
   var sectionId = todo?.sectionId ?? initialSectionId;
+  final subtasks = [...initialSubtasks];
+  final subtaskEndKey = GlobalKey();
   return showDialog<RegularTodoValue>(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
@@ -267,11 +307,20 @@ Future<RegularTodoValue?> showRegularTodoDialog(
             children: [
               TextFormField(
                 initialValue: content,
-                autofocus: true,
-                maxLines: 3,
-                minLines: 1,
-                decoration: const InputDecoration(labelText: 'Todo'),
+                autofocus: todo == null,
+                maxLength: _todoTitleMaxLength,
+                maxLines: 1,
+                decoration: const InputDecoration(labelText: 'Title'),
                 onChanged: (value) => content = value,
+              ),
+              TextFormField(
+                initialValue: description,
+                maxLines: 4,
+                minLines: 1,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                ),
+                onChanged: (value) => description = value,
               ),
               if (sections.isNotEmpty) ...[
                 const SizedBox(height: 12),
@@ -293,6 +342,12 @@ Future<RegularTodoValue?> showRegularTodoDialog(
                   onChanged: (value) => setState(() => sectionId = value),
                 ),
               ],
+              if (todo != null)
+                _SubtaskEditor(
+                  subtasks: subtasks,
+                  setState: setState,
+                  endKey: subtaskEndKey,
+                ),
             ],
           ),
         ),
@@ -320,7 +375,11 @@ Future<RegularTodoValue?> showRegularTodoDialog(
               if (content.trim().isEmpty) return;
               Navigator.pop(dialogContext, (
                 content: content.trim(),
+                description: description.trim().isEmpty
+                    ? null
+                    : description.trim(),
                 sectionId: sectionId,
+                subtasks: [...subtasks],
               ));
             },
             child: const Text('Save'),
@@ -329,6 +388,122 @@ Future<RegularTodoValue?> showRegularTodoDialog(
       ),
     ),
   );
+}
+
+final class _SubtaskEditor extends StatelessWidget {
+  const _SubtaskEditor({
+    required this.subtasks,
+    required this.setState,
+    required this.endKey,
+  });
+
+  final List<TodoSubtaskDraft> subtasks;
+  final StateSetter setState;
+  final GlobalKey endKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Subtasks',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () => _add(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
+        for (final entry in subtasks.indexed)
+          Row(
+            key: ValueKey(entry.$1),
+            children: [
+              Checkbox(
+                value: entry.$2.isCompleted,
+                onChanged: (value) => setState(() {
+                  subtasks[entry.$1] = TodoSubtaskDraft(
+                    content: entry.$2.content,
+                    isCompleted: value ?? false,
+                  );
+                }),
+              ),
+              Expanded(
+                child: InkWell(
+                  onTap: () => _edit(context, entry.$1),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      entry.$2.content,
+                      style: TextStyle(
+                        decoration: entry.$2.isCompleted
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Remove subtask',
+                onPressed: () => setState(() => subtasks.removeAt(entry.$1)),
+                icon: const Icon(Icons.close, size: 18),
+              ),
+            ],
+          ),
+        SizedBox(key: endKey, height: 1),
+      ],
+    );
+  }
+
+  Future<void> _add(BuildContext context) async {
+    final content = await showTextDialog(
+      context,
+      title: 'New subtask',
+      label: 'Subtask',
+    );
+    if (content == null) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(
+      () =>
+          subtasks.add(TodoSubtaskDraft(content: content, isCompleted: false)),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = endKey.currentContext;
+      if (context != null) {
+        Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+          alignment: 1,
+        );
+      }
+    });
+  }
+
+  Future<void> _edit(BuildContext context, int index) async {
+    final subtask = subtasks[index];
+    final content = await showTextDialog(
+      context,
+      title: 'Edit subtask',
+      label: 'Subtask',
+      initialValue: subtask.content,
+    );
+    if (content == null) return;
+    setState(() {
+      subtasks[index] = TodoSubtaskDraft(
+        content: content,
+        isCompleted: subtask.isCompleted,
+      );
+    });
+  }
 }
 
 String _displayDate(DateTime date) {

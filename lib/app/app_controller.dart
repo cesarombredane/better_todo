@@ -14,6 +14,8 @@ final class AppController extends ChangeNotifier {
   List<ListSectionModel> sections = [];
   List<ScheduledTodoModel> scheduledTodos = [];
   List<RegularTodoModel> regularTodos = [];
+  Map<int, List<TodoSubtaskModel>> scheduledSubtasks = {};
+  Map<int, List<TodoSubtaskModel>> regularSubtasks = {};
 
   int? selectedListId;
   String? password;
@@ -69,6 +71,8 @@ final class AppController extends ChangeNotifier {
       sections = [];
       regularTodos = [];
       scheduledTodos = [];
+      scheduledSubtasks = {};
+      regularSubtasks = {};
       return;
     }
     if (list.isScheduled) {
@@ -78,13 +82,37 @@ final class AppController extends ChangeNotifier {
         DateTime(now.year - 1),
         DateTime(now.year + 3, 12, 31),
       );
+      final subtasks = await _repository.getScheduledSubtasksForList(list.id);
+      scheduledSubtasks = _groupSubtasks(
+        subtasks,
+        (subtask) => subtask.scheduledTodoId,
+      );
       sections = [];
       regularTodos = [];
+      regularSubtasks = {};
     } else {
       sections = await _repository.getSections(list.id);
       regularTodos = await _repository.getRegularTodos(list.id);
+      final subtasks = await _repository.getRegularSubtasksForList(list.id);
+      regularSubtasks = _groupSubtasks(
+        subtasks,
+        (subtask) => subtask.regularTodoId,
+      );
       scheduledTodos = [];
+      scheduledSubtasks = {};
     }
+  }
+
+  Map<int, List<TodoSubtaskModel>> _groupSubtasks(
+    List<TodoSubtaskModel> subtasks,
+    int? Function(TodoSubtaskModel) parentId,
+  ) {
+    final grouped = <int, List<TodoSubtaskModel>>{};
+    for (final subtask in subtasks) {
+      final id = parentId(subtask);
+      if (id != null) (grouped[id] ??= []).add(subtask);
+    }
+    return grouped;
   }
 
   Future<void> createList({
@@ -200,6 +228,7 @@ final class AppController extends ChangeNotifier {
 
   Future<void> createScheduledTodo({
     required String content,
+    String? description,
     required DateTime day,
     int? minute,
   }) async {
@@ -209,6 +238,7 @@ final class AppController extends ChangeNotifier {
       await _repository.createScheduledTodo(
         listId: list.id,
         content: content,
+        description: description,
         day: day,
         minute: minute,
       );
@@ -219,19 +249,29 @@ final class AppController extends ChangeNotifier {
   Future<void> editScheduledTodo(
     ScheduledTodoModel todo, {
     required String content,
+    String? description,
     required DateTime day,
     int? minute,
+    required List<TodoSubtaskDraft> subtasks,
   }) async {
     await _run(() async {
       await _repository.updateScheduledTodo(
         todo,
         content: content,
+        description: description,
+        updateDescription: true,
         day: day,
         minute: minute,
         updateMinute: true,
       );
+      await _repository.replaceScheduledSubtasks(todo.id, subtasks);
       await _loadSelectedContent();
     });
+  }
+
+  Future<List<TodoSubtaskDraft>> loadScheduledSubtasks(int todoId) async {
+    final subtasks = await _repository.getScheduledSubtasks(todoId);
+    return subtasks.map(TodoSubtaskDraft.fromModel).toList();
   }
 
   Future<void> deleteScheduledTodo(ScheduledTodoModel todo) async {
@@ -309,6 +349,7 @@ final class AppController extends ChangeNotifier {
 
   Future<void> createRegularTodo({
     required String content,
+    String? description,
     int? sectionId,
   }) async {
     final list = selectedList;
@@ -317,6 +358,7 @@ final class AppController extends ChangeNotifier {
       await _repository.createRegularTodo(
         listId: list.id,
         content: content,
+        description: description,
         sectionId: sectionId,
       );
       await _loadSelectedContent();
@@ -326,15 +368,32 @@ final class AppController extends ChangeNotifier {
   Future<void> editRegularTodo(
     RegularTodoModel todo, {
     required String content,
+    String? description,
     int? sectionId,
+    required List<TodoSubtaskDraft> subtasks,
   }) async {
     await _run(() async {
       await _repository.updateRegularTodo(
         todo,
         content: content,
+        description: description,
+        updateDescription: true,
         sectionId: sectionId,
         updateSection: true,
       );
+      await _repository.replaceRegularSubtasks(todo.id, subtasks);
+      await _loadSelectedContent();
+    });
+  }
+
+  Future<List<TodoSubtaskDraft>> loadRegularSubtasks(int todoId) async {
+    final subtasks = await _repository.getRegularSubtasks(todoId);
+    return subtasks.map(TodoSubtaskDraft.fromModel).toList();
+  }
+
+  Future<void> toggleSubtask(TodoSubtaskModel subtask) async {
+    await _run(() async {
+      await _repository.setSubtaskCompleted(subtask.id, !subtask.isCompleted);
       await _loadSelectedContent();
     });
   }

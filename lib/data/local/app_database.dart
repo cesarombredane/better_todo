@@ -7,7 +7,31 @@ final class AppDatabase {
   static final AppDatabase instance = AppDatabase._();
 
   static const _fileName = 'better_todo.db';
-  static const _version = 2;
+  static const _version = 4;
+  static const _createTodoSubtasks = '''
+    CREATE TABLE todo_subtasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      scheduled_todo_id INTEGER,
+      regular_todo_id INTEGER,
+      content TEXT NOT NULL,
+      is_completed INTEGER NOT NULL DEFAULT 0
+        CHECK (is_completed IN (0, 1)),
+      sort_position INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      CHECK (
+        (scheduled_todo_id IS NOT NULL AND regular_todo_id IS NULL)
+        OR
+        (scheduled_todo_id IS NULL AND regular_todo_id IS NOT NULL)
+      ),
+      FOREIGN KEY (scheduled_todo_id)
+        REFERENCES scheduled_todos (id)
+        ON DELETE CASCADE,
+      FOREIGN KEY (regular_todo_id)
+        REFERENCES regular_todos (id)
+        ON DELETE CASCADE
+    )
+  ''';
 
   Database? _database;
 
@@ -76,6 +100,7 @@ final class AppDatabase {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         list_id INTEGER NOT NULL,
         content TEXT NOT NULL,
+        description TEXT,
         scheduled_day TEXT NOT NULL,
         scheduled_minute INTEGER
           CHECK (
@@ -100,6 +125,7 @@ final class AppDatabase {
         list_id INTEGER NOT NULL,
         section_id INTEGER,
         content TEXT NOT NULL,
+        description TEXT,
         is_completed INTEGER NOT NULL DEFAULT 0
           CHECK (is_completed IN (0, 1)),
         sort_position INTEGER NOT NULL DEFAULT 0,
@@ -114,6 +140,8 @@ final class AppDatabase {
           ON DELETE SET NULL
       )
     ''');
+
+    batch.execute(_createTodoSubtasks);
 
     await batch.commit(noResult: true);
   }
@@ -134,6 +162,17 @@ final class AppDatabase {
           SELECT 1 FROM todo_lists WHERE is_pinned = 1
         )
       ''');
+    }
+    if (oldVersion < 3) {
+      await database.execute(_createTodoSubtasks);
+    }
+    if (oldVersion < 4) {
+      await database.execute(
+        'ALTER TABLE scheduled_todos ADD COLUMN description TEXT',
+      );
+      await database.execute(
+        'ALTER TABLE regular_todos ADD COLUMN description TEXT',
+      );
     }
   }
 

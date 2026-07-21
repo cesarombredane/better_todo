@@ -52,6 +52,7 @@ final class ScheduledTodoModel {
     required this.id,
     required this.listId,
     required this.content,
+    required this.description,
     required this.scheduledDay,
     required this.scheduledMinute,
     required this.isCompleted,
@@ -63,6 +64,7 @@ final class ScheduledTodoModel {
         id: map['id']! as int,
         listId: map['list_id']! as int,
         content: map['content']! as String,
+        description: map['description'] as String?,
         scheduledDay: DateTime.parse(map['scheduled_day']! as String),
         scheduledMinute: map['scheduled_minute'] as int?,
         isCompleted: map['is_completed'] == 1,
@@ -72,6 +74,7 @@ final class ScheduledTodoModel {
   final int id;
   final int listId;
   final String content;
+  final String? description;
   final DateTime scheduledDay;
   final int? scheduledMinute;
   final bool isCompleted;
@@ -84,6 +87,7 @@ final class RegularTodoModel {
     required this.listId,
     required this.sectionId,
     required this.content,
+    required this.description,
     required this.isCompleted,
     required this.sortPosition,
   });
@@ -94,6 +98,7 @@ final class RegularTodoModel {
         listId: map['list_id']! as int,
         sectionId: map['section_id'] as int?,
         content: map['content']! as String,
+        description: map['description'] as String?,
         isCompleted: map['is_completed'] == 1,
         sortPosition: map['sort_position']! as int,
       );
@@ -102,8 +107,44 @@ final class RegularTodoModel {
   final int listId;
   final int? sectionId;
   final String content;
+  final String? description;
   final bool isCompleted;
   final int sortPosition;
+}
+
+final class TodoSubtaskModel {
+  const TodoSubtaskModel({
+    required this.id,
+    required this.scheduledTodoId,
+    required this.regularTodoId,
+    required this.content,
+    required this.isCompleted,
+  });
+
+  factory TodoSubtaskModel.fromMap(Map<String, Object?> map) =>
+      TodoSubtaskModel(
+        id: map['id']! as int,
+        scheduledTodoId: map['scheduled_todo_id'] as int?,
+        regularTodoId: map['regular_todo_id'] as int?,
+        content: map['content']! as String,
+        isCompleted: map['is_completed'] == 1,
+      );
+
+  final int id;
+  final int? scheduledTodoId;
+  final int? regularTodoId;
+  final String content;
+  final bool isCompleted;
+}
+
+final class TodoSubtaskDraft {
+  const TodoSubtaskDraft({required this.content, required this.isCompleted});
+
+  factory TodoSubtaskDraft.fromModel(TodoSubtaskModel model) =>
+      TodoSubtaskDraft(content: model.content, isCompleted: model.isCompleted);
+
+  final String content;
+  final bool isCompleted;
 }
 
 String databaseDay(DateTime date) {

@@ -191,6 +191,7 @@ final class TodoRepository {
   Future<int> createScheduledTodo({
     required int listId,
     required String content,
+    String? description,
     required DateTime day,
     int? minute,
   }) async {
@@ -206,6 +207,7 @@ final class TodoRepository {
     return database.insert('scheduled_todos', {
       'list_id': listId,
       'content': content.trim(),
+      'description': _normalizedDescription(description),
       'scheduled_day': dayValue,
       'scheduled_minute': minute,
       'sort_position': position ?? 1000,
@@ -217,6 +219,8 @@ final class TodoRepository {
   Future<void> updateScheduledTodo(
     ScheduledTodoModel todo, {
     String? content,
+    String? description,
+    bool updateDescription = false,
     DateTime? day,
     int? minute,
     bool updateMinute = false,
@@ -227,6 +231,8 @@ final class TodoRepository {
       'scheduled_todos',
       {
         if (content != null) 'content': content.trim(),
+        if (updateDescription)
+          'description': _normalizedDescription(description),
         if (day != null) 'scheduled_day': databaseDay(day),
         if (updateMinute) 'scheduled_minute': minute,
         if (isCompleted != null) 'is_completed': isCompleted ? 1 : 0,
@@ -287,6 +293,7 @@ final class TodoRepository {
   Future<int> createRegularTodo({
     required int listId,
     required String content,
+    String? description,
     int? sectionId,
   }) async {
     final database = await _db;
@@ -303,6 +310,7 @@ final class TodoRepository {
       'list_id': listId,
       'section_id': sectionId,
       'content': content.trim(),
+      'description': _normalizedDescription(description),
       'sort_position': position ?? 1000,
       'created_at': _now,
       'updated_at': _now,
@@ -312,6 +320,8 @@ final class TodoRepository {
   Future<void> updateRegularTodo(
     RegularTodoModel todo, {
     String? content,
+    String? description,
+    bool updateDescription = false,
     int? sectionId,
     bool updateSection = false,
     bool? isCompleted,
@@ -321,6 +331,8 @@ final class TodoRepository {
       'regular_todos',
       {
         if (content != null) 'content': content.trim(),
+        if (updateDescription)
+          'description': _normalizedDescription(description),
         if (updateSection) 'section_id': sectionId,
         if (isCompleted != null) 'is_completed': isCompleted ? 1 : 0,
         if (isCompleted != null) 'completed_at': isCompleted ? _now : null,
@@ -334,6 +346,103 @@ final class TodoRepository {
   Future<void> deleteRegularTodo(int id) async {
     final database = await _db;
     await database.delete('regular_todos', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<TodoSubtaskModel>> getScheduledSubtasks(int todoId) =>
+      _getSubtasks('scheduled_todo_id', todoId);
+
+  Future<List<TodoSubtaskModel>> getRegularSubtasks(int todoId) =>
+      _getSubtasks('regular_todo_id', todoId);
+
+  Future<List<TodoSubtaskModel>> getScheduledSubtasksForList(int listId) =>
+      _getSubtasksForList(
+        parentTable: 'scheduled_todos',
+        parentColumn: 'scheduled_todo_id',
+        listId: listId,
+      );
+
+  Future<List<TodoSubtaskModel>> getRegularSubtasksForList(int listId) =>
+      _getSubtasksForList(
+        parentTable: 'regular_todos',
+        parentColumn: 'regular_todo_id',
+        listId: listId,
+      );
+
+  Future<List<TodoSubtaskModel>> _getSubtasksForList({
+    required String parentTable,
+    required String parentColumn,
+    required int listId,
+  }) async {
+    final database = await _db;
+    final rows = await database.rawQuery(
+      'SELECT todo_subtasks.* FROM todo_subtasks '
+      'INNER JOIN $parentTable '
+      'ON $parentTable.id = todo_subtasks.$parentColumn '
+      'WHERE $parentTable.list_id = ? '
+      'ORDER BY todo_subtasks.sort_position ASC, todo_subtasks.id ASC',
+      [listId],
+    );
+    return rows.map(TodoSubtaskModel.fromMap).toList();
+  }
+
+  Future<List<TodoSubtaskModel>> _getSubtasks(
+    String parentColumn,
+    int todoId,
+  ) async {
+    final database = await _db;
+    final rows = await database.query(
+      'todo_subtasks',
+      where: '$parentColumn = ?',
+      whereArgs: [todoId],
+      orderBy: 'sort_position ASC, id ASC',
+    );
+    return rows.map(TodoSubtaskModel.fromMap).toList();
+  }
+
+  Future<void> replaceScheduledSubtasks(
+    int todoId,
+    List<TodoSubtaskDraft> subtasks,
+  ) => _replaceSubtasks('scheduled_todo_id', todoId, subtasks);
+
+  Future<void> replaceRegularSubtasks(
+    int todoId,
+    List<TodoSubtaskDraft> subtasks,
+  ) => _replaceSubtasks('regular_todo_id', todoId, subtasks);
+
+  Future<void> setSubtaskCompleted(int id, bool isCompleted) async {
+    final database = await _db;
+    await database.update(
+      'todo_subtasks',
+      {'is_completed': isCompleted ? 1 : 0, 'updated_at': _now},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> _replaceSubtasks(
+    String parentColumn,
+    int todoId,
+    List<TodoSubtaskDraft> subtasks,
+  ) async {
+    final database = await _db;
+    await database.transaction((transaction) async {
+      await transaction.delete(
+        'todo_subtasks',
+        where: '$parentColumn = ?',
+        whereArgs: [todoId],
+      );
+      for (var index = 0; index < subtasks.length; index++) {
+        final subtask = subtasks[index];
+        await transaction.insert('todo_subtasks', {
+          parentColumn: todoId,
+          'content': subtask.content.trim(),
+          'is_completed': subtask.isCompleted ? 1 : 0,
+          'sort_position': (index + 1) * 1000,
+          'created_at': _now,
+          'updated_at': _now,
+        });
+      }
+    });
   }
 
   Future<void> reorderRegularTodos(List<int> ids) async {
@@ -352,5 +461,10 @@ final class TodoRepository {
         );
       }
     });
+  }
+
+  String? _normalizedDescription(String? value) {
+    final normalized = value?.trim();
+    return normalized == null || normalized.isEmpty ? null : normalized;
   }
 }

@@ -2,6 +2,7 @@ import 'package:better_todo/app/app_controller.dart';
 import 'package:better_todo/data/models/todo_models.dart';
 import 'package:better_todo/theme/app_colors.dart';
 import 'package:better_todo/widgets/app_dialogs.dart';
+import 'package:better_todo/widgets/subtask_summary.dart';
 import 'package:flutter/material.dart';
 
 final class SchedulePage extends StatelessWidget {
@@ -134,6 +135,7 @@ final class _DaySection extends StatelessWidget {
     if (value != null) {
       await controller.createScheduledTodo(
         content: value.content,
+        description: value.description,
         day: value.day,
         minute: value.minute,
       );
@@ -155,24 +157,66 @@ final class _ScheduledTodoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final subtasks = controller.scheduledSubtasks[todo.id] ?? const [];
+    final hasDetails = todo.description != null || subtasks.isNotEmpty;
     final tile = ListTile(
       contentPadding: const EdgeInsets.only(left: 4, right: 8),
-      leading: Checkbox(
-        value: todo.isCompleted,
-        onChanged: (_) => _validate(context),
-      ),
-      title: Text(
-        todo.content,
-        style: TextStyle(
-          decoration: todo.isCompleted ? TextDecoration.lineThrough : null,
-          color: todo.isCompleted
-              ? AppColors.textDisabled
-              : AppColors.textPrimary,
+      titleAlignment: hasDetails
+          ? ListTileTitleAlignment.top
+          : ListTileTitleAlignment.center,
+      leading: SizedBox(
+        width: 40,
+        height: 28,
+        child: Checkbox(
+          value: todo.isCompleted,
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          onChanged: (_) => _validate(context),
         ),
       ),
-      subtitle: todo.scheduledMinute == null
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              todo.content,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                decoration: todo.isCompleted
+                    ? TextDecoration.lineThrough
+                    : null,
+                color: todo.isCompleted
+                    ? AppColors.textDisabled
+                    : AppColors.textPrimary,
+              ),
+            ),
+          ),
+          if (todo.scheduledMinute != null) ...[
+            const SizedBox(width: 8),
+            Text(
+              _timeLabel(todo.scheduledMinute!),
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+          ],
+        ],
+      ),
+      subtitle: todo.description == null && subtasks.isEmpty
           ? null
-          : Text(_timeLabel(todo.scheduledMinute!)),
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (todo.description != null)
+                  Text(
+                    todo.description!,
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                if (subtasks.isNotEmpty)
+                  SubtaskSummary(
+                    subtasks: subtasks,
+                    onToggle: controller.toggleSubtask,
+                  ),
+              ],
+            ),
       onTap: () => _edit(context),
       trailing: ReorderableDragStartListener(
         index: index,
@@ -186,13 +230,21 @@ final class _ScheduledTodoTile extends StatelessWidget {
   }
 
   Future<void> _edit(BuildContext context) async {
-    final value = await showScheduledTodoDialog(context, todo: todo);
+    final subtasks = await controller.loadScheduledSubtasks(todo.id);
+    if (!context.mounted) return;
+    final value = await showScheduledTodoDialog(
+      context,
+      todo: todo,
+      initialSubtasks: subtasks,
+    );
     if (value != null) {
       await controller.editScheduledTodo(
         todo,
         content: value.content,
+        description: value.description,
         day: value.day,
         minute: value.minute,
+        subtasks: value.subtasks,
       );
     }
   }
