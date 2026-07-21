@@ -7,7 +7,7 @@ final class AppDatabase {
   static final AppDatabase instance = AppDatabase._();
 
   static const _fileName = 'better_todo.db';
-  static const _version = 4;
+  static const _version = 5;
   static const _createTodoSubtasks = '''
     CREATE TABLE todo_subtasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,6 +66,24 @@ final class AppDatabase {
     ''');
 
     batch.execute('''
+      CREATE TABLE persons (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        is_owner INTEGER NOT NULL DEFAULT 0
+          CHECK (is_owner IN (0, 1)),
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    ''');
+    final now = DateTime.now().millisecondsSinceEpoch;
+    batch.insert('persons', {
+      'name': 'Me',
+      'is_owner': 1,
+      'created_at': now,
+      'updated_at': now,
+    });
+
+    batch.execute('''
       CREATE TABLE todo_lists (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -101,6 +119,7 @@ final class AppDatabase {
         list_id INTEGER NOT NULL,
         content TEXT NOT NULL,
         description TEXT,
+        assignee_id INTEGER,
         scheduled_day TEXT NOT NULL,
         scheduled_minute INTEGER
           CHECK (
@@ -115,7 +134,10 @@ final class AppDatabase {
         completed_at INTEGER,
         FOREIGN KEY (list_id)
           REFERENCES todo_lists (id)
-          ON DELETE CASCADE
+          ON DELETE CASCADE,
+        FOREIGN KEY (assignee_id)
+          REFERENCES persons (id)
+          ON DELETE SET NULL
       )
     ''');
 
@@ -126,6 +148,7 @@ final class AppDatabase {
         section_id INTEGER,
         content TEXT NOT NULL,
         description TEXT,
+        assignee_id INTEGER,
         is_completed INTEGER NOT NULL DEFAULT 0
           CHECK (is_completed IN (0, 1)),
         sort_position INTEGER NOT NULL DEFAULT 0,
@@ -137,6 +160,9 @@ final class AppDatabase {
           ON DELETE CASCADE,
         FOREIGN KEY (section_id)
           REFERENCES list_sections (id)
+          ON DELETE SET NULL,
+        FOREIGN KEY (assignee_id)
+          REFERENCES persons (id)
           ON DELETE SET NULL
       )
     ''');
@@ -173,6 +199,35 @@ final class AppDatabase {
       await database.execute(
         'ALTER TABLE regular_todos ADD COLUMN description TEXT',
       );
+    }
+    if (oldVersion < 5) {
+      await database.execute('''
+        CREATE TABLE persons (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          is_owner INTEGER NOT NULL DEFAULT 0
+            CHECK (is_owner IN (0, 1)),
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        )
+      ''');
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final ownerId = await database.insert('persons', {
+        'name': 'Me',
+        'is_owner': 1,
+        'created_at': now,
+        'updated_at': now,
+      });
+      await database.execute(
+        'ALTER TABLE scheduled_todos ADD COLUMN assignee_id INTEGER '
+        'REFERENCES persons(id) ON DELETE SET NULL',
+      );
+      await database.execute(
+        'ALTER TABLE regular_todos ADD COLUMN assignee_id INTEGER '
+        'REFERENCES persons(id) ON DELETE SET NULL',
+      );
+      await database.update('scheduled_todos', {'assignee_id': ownerId});
+      await database.update('regular_todos', {'assignee_id': ownerId});
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:better_todo/app/app_controller.dart';
 import 'package:better_todo/data/models/todo_models.dart';
 import 'package:better_todo/theme/app_colors.dart';
 import 'package:better_todo/widgets/app_dialogs.dart';
+import 'package:better_todo/widgets/assignee_label.dart';
 import 'package:better_todo/widgets/subtask_summary.dart';
 import 'package:flutter/material.dart';
 
@@ -135,12 +136,15 @@ final class _SectionCard extends StatelessWidget {
     final value = await showRegularTodoDialog(
       context,
       sections: controller.sections,
+      persons: controller.persons,
       initialSectionId: section.id,
+      initialAssigneeId: controller.defaultAssigneeId,
     );
     if (value != null) {
       await controller.createRegularTodo(
         content: value.content,
         description: value.description,
+        assigneeId: value.assigneeId,
         sectionId: value.sectionId,
       );
     }
@@ -222,12 +226,15 @@ final class _TodoGroup extends StatelessWidget {
     final value = await showRegularTodoDialog(
       context,
       sections: controller.sections,
+      persons: controller.persons,
       initialSectionId: sectionId,
+      initialAssigneeId: controller.defaultAssigneeId,
     );
     if (value != null) {
       await controller.createRegularTodo(
         content: value.content,
         description: value.description,
+        assigneeId: value.assigneeId,
         sectionId: value.sectionId,
       );
     }
@@ -280,6 +287,7 @@ final class _RegularTodoTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isInformationList = controller.selectedList?.isLocked ?? false;
     final subtasks = controller.regularSubtasks[todo.id] ?? const [];
+    final assigneeName = controller.visibleAssigneeName(todo.assigneeId);
     final hasDetails = todo.description != null || subtasks.isNotEmpty;
     return ListTile(
       contentPadding: const EdgeInsets.only(left: 4, right: 8),
@@ -298,18 +306,28 @@ final class _RegularTodoTile extends StatelessWidget {
                 onChanged: (_) => _validate(context),
               ),
             ),
-      title: Text(
-        todo.content,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          decoration: !isInformationList && todo.isCompleted
-              ? TextDecoration.lineThrough
-              : null,
-          color: !isInformationList && todo.isCompleted
-              ? AppColors.textDisabled
-              : AppColors.textPrimary,
-        ),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              todo.content,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                decoration: !isInformationList && todo.isCompleted
+                    ? TextDecoration.lineThrough
+                    : null,
+                color: !isInformationList && todo.isCompleted
+                    ? AppColors.textDisabled
+                    : AppColors.textPrimary,
+              ),
+            ),
+          ),
+          if (assigneeName != null) ...[
+            const SizedBox(width: 8),
+            AssigneeLabel(name: assigneeName),
+          ],
+        ],
       ),
       subtitle: todo.description == null && subtasks.isEmpty
           ? null
@@ -346,6 +364,7 @@ final class _RegularTodoTile extends StatelessWidget {
     final value = await showRegularTodoDialog(
       context,
       sections: controller.sections,
+      persons: controller.persons,
       todo: todo,
       initialSubtasks: subtasks,
       onDelete: isInformationList
@@ -357,6 +376,7 @@ final class _RegularTodoTile extends StatelessWidget {
         todo,
         content: value.content,
         description: value.description,
+        assigneeId: value.assigneeId,
         sectionId: value.sectionId,
         subtasks: value.subtasks,
       );

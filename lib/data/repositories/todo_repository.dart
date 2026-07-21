@@ -115,6 +115,25 @@ final class TodoRepository {
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  Future<List<PersonModel>> getPersons() async {
+    final database = await _db;
+    final rows = await database.query(
+      'persons',
+      orderBy: 'is_owner DESC, name COLLATE NOCASE ASC, id ASC',
+    );
+    return rows.map(PersonModel.fromMap).toList();
+  }
+
+  Future<int> createPerson(String name) async {
+    final database = await _db;
+    return database.insert('persons', {
+      'name': name.trim(),
+      'is_owner': 0,
+      'created_at': _now,
+      'updated_at': _now,
+    });
+  }
+
   Future<List<ListSectionModel>> getSections(int listId) async {
     final database = await _db;
     final rows = await database.query(
@@ -192,6 +211,7 @@ final class TodoRepository {
     required int listId,
     required String content,
     String? description,
+    int? assigneeId,
     required DateTime day,
     int? minute,
   }) async {
@@ -208,6 +228,7 @@ final class TodoRepository {
       'list_id': listId,
       'content': content.trim(),
       'description': _normalizedDescription(description),
+      'assignee_id': assigneeId,
       'scheduled_day': dayValue,
       'scheduled_minute': minute,
       'sort_position': position ?? 1000,
@@ -221,6 +242,8 @@ final class TodoRepository {
     String? content,
     String? description,
     bool updateDescription = false,
+    int? assigneeId,
+    bool updateAssignee = false,
     DateTime? day,
     int? minute,
     bool updateMinute = false,
@@ -233,6 +256,7 @@ final class TodoRepository {
         if (content != null) 'content': content.trim(),
         if (updateDescription)
           'description': _normalizedDescription(description),
+        if (updateAssignee) 'assignee_id': assigneeId,
         if (day != null) 'scheduled_day': databaseDay(day),
         if (updateMinute) 'scheduled_minute': minute,
         if (isCompleted != null) 'is_completed': isCompleted ? 1 : 0,
@@ -294,6 +318,7 @@ final class TodoRepository {
     required int listId,
     required String content,
     String? description,
+    int? assigneeId,
     int? sectionId,
   }) async {
     final database = await _db;
@@ -311,6 +336,7 @@ final class TodoRepository {
       'section_id': sectionId,
       'content': content.trim(),
       'description': _normalizedDescription(description),
+      'assignee_id': assigneeId,
       'sort_position': position ?? 1000,
       'created_at': _now,
       'updated_at': _now,
@@ -322,6 +348,8 @@ final class TodoRepository {
     String? content,
     String? description,
     bool updateDescription = false,
+    int? assigneeId,
+    bool updateAssignee = false,
     int? sectionId,
     bool updateSection = false,
     bool? isCompleted,
@@ -333,6 +361,7 @@ final class TodoRepository {
         if (content != null) 'content': content.trim(),
         if (updateDescription)
           'description': _normalizedDescription(description),
+        if (updateAssignee) 'assignee_id': assigneeId,
         if (updateSection) 'section_id': sectionId,
         if (isCompleted != null) 'is_completed': isCompleted ? 1 : 0,
         if (isCompleted != null) 'completed_at': isCompleted ? _now : null,

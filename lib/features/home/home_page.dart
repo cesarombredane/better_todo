@@ -120,14 +120,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _addScheduledTodo(BuildContext context) async {
     final value = await showScheduledTodoDialog(
       context,
+      persons: controller.persons,
       initialDay: controller.scheduleView == ScheduleView.calendar
           ? controller.selectedCalendarDay
           : DateTime.now(),
+      initialAssigneeId: controller.defaultAssigneeId,
     );
     if (value != null) {
       await controller.createScheduledTodo(
         content: value.content,
         description: value.description,
+        assigneeId: value.assigneeId,
         day: value.day,
         minute: value.minute,
       );
@@ -138,11 +141,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final value = await showRegularTodoDialog(
       context,
       sections: controller.sections,
+      persons: controller.persons,
+      initialAssigneeId: controller.defaultAssigneeId,
     );
     if (value != null) {
       await controller.createRegularTodo(
         content: value.content,
         description: value.description,
+        assigneeId: value.assigneeId,
         sectionId: value.sectionId,
       );
     }

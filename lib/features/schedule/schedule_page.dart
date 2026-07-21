@@ -2,6 +2,7 @@ import 'package:better_todo/app/app_controller.dart';
 import 'package:better_todo/data/models/todo_models.dart';
 import 'package:better_todo/theme/app_colors.dart';
 import 'package:better_todo/widgets/app_dialogs.dart';
+import 'package:better_todo/widgets/assignee_label.dart';
 import 'package:better_todo/widgets/subtask_summary.dart';
 import 'package:flutter/material.dart';
 
@@ -131,11 +132,17 @@ final class _DaySection extends StatelessWidget {
   }
 
   Future<void> _createForDay(BuildContext context) async {
-    final value = await showScheduledTodoDialog(context, initialDay: day);
+    final value = await showScheduledTodoDialog(
+      context,
+      persons: controller.persons,
+      initialDay: day,
+      initialAssigneeId: controller.defaultAssigneeId,
+    );
     if (value != null) {
       await controller.createScheduledTodo(
         content: value.content,
         description: value.description,
+        assigneeId: value.assigneeId,
         day: value.day,
         minute: value.minute,
       );
@@ -158,6 +165,7 @@ final class _ScheduledTodoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final subtasks = controller.scheduledSubtasks[todo.id] ?? const [];
+    final assigneeName = controller.visibleAssigneeName(todo.assigneeId);
     final hasDetails = todo.description != null || subtasks.isNotEmpty;
     final tile = ListTile(
       contentPadding: const EdgeInsets.only(left: 4, right: 8),
@@ -198,6 +206,10 @@ final class _ScheduledTodoTile extends StatelessWidget {
               style: const TextStyle(color: AppColors.textSecondary),
             ),
           ],
+          if (assigneeName != null) ...[
+            const SizedBox(width: 8),
+            AssigneeLabel(name: assigneeName),
+          ],
         ],
       ),
       subtitle: todo.description == null && subtasks.isEmpty
@@ -234,6 +246,7 @@ final class _ScheduledTodoTile extends StatelessWidget {
     if (!context.mounted) return;
     final value = await showScheduledTodoDialog(
       context,
+      persons: controller.persons,
       todo: todo,
       initialSubtasks: subtasks,
     );
@@ -242,6 +255,7 @@ final class _ScheduledTodoTile extends StatelessWidget {
         todo,
         content: value.content,
         description: value.description,
+        assigneeId: value.assigneeId,
         day: value.day,
         minute: value.minute,
         subtasks: value.subtasks,

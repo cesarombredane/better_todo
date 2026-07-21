@@ -80,6 +80,11 @@ final class ListDrawer extends StatelessWidget {
               onTap: () => _createList(context),
             ),
             ListTile(
+              leading: const Icon(Icons.person_add_outlined),
+              title: const Text('Add person'),
+              onTap: () => _addPerson(context),
+            ),
+            ListTile(
               leading: const Icon(Icons.password_outlined),
               title: Text(
                 controller.password == null
@@ -118,6 +123,15 @@ final class ListDrawer extends StatelessWidget {
     }
     await controller.createList(name: value.name, isLocked: value.isLocked);
     if (context.mounted) Navigator.pop(context);
+  }
+
+  Future<void> _addPerson(BuildContext context) async {
+    final name = await showTextDialog(
+      context,
+      title: 'Add person',
+      label: 'Name',
+    );
+    if (name != null) await controller.createPerson(name);
   }
 
   Future<void> _managePassword(BuildContext context) async {

@@ -11,6 +11,7 @@ final class AppController extends ChangeNotifier {
   final TodoRepository _repository;
 
   List<TodoListModel> lists = [];
+  List<PersonModel> persons = [];
   List<ListSectionModel> sections = [];
   List<ScheduledTodoModel> scheduledTodos = [];
   List<RegularTodoModel> regularTodos = [];
@@ -33,12 +34,22 @@ final class AppController extends ChangeNotifier {
     return null;
   }
 
+  int? get defaultAssigneeId =>
+      persons.where((person) => person.isOwner).firstOrNull?.id ??
+      persons.firstOrNull?.id;
+
+  String? visibleAssigneeName(int? id) {
+    final person = persons.where((person) => person.id == id).firstOrNull;
+    return person == null || person.isOwner ? null : person.name;
+  }
+
   static DateTime _dateOnly(DateTime date) =>
       DateTime(date.year, date.month, date.day);
 
   Future<void> initialize() async {
     await _run(() async {
       password = await _repository.getPassword();
+      persons = await _repository.getPersons();
       lists = await _repository.getLists();
       if (!lists.any((list) => list.isScheduled)) {
         await _repository.createList(
@@ -128,6 +139,20 @@ final class AppController extends ChangeNotifier {
       await _reloadLists();
       selectedListId = id;
       await _loadSelectedContent();
+    });
+  }
+
+  Future<void> createPerson(String name) async {
+    final normalized = name.trim();
+    if (normalized.isEmpty ||
+        persons.any(
+          (person) => person.name.toLowerCase() == normalized.toLowerCase(),
+        )) {
+      return;
+    }
+    await _run(() async {
+      await _repository.createPerson(normalized);
+      persons = await _repository.getPersons();
     });
   }
 
@@ -229,6 +254,7 @@ final class AppController extends ChangeNotifier {
   Future<void> createScheduledTodo({
     required String content,
     String? description,
+    int? assigneeId,
     required DateTime day,
     int? minute,
   }) async {
@@ -239,6 +265,7 @@ final class AppController extends ChangeNotifier {
         listId: list.id,
         content: content,
         description: description,
+        assigneeId: assigneeId ?? defaultAssigneeId,
         day: day,
         minute: minute,
       );
@@ -250,6 +277,7 @@ final class AppController extends ChangeNotifier {
     ScheduledTodoModel todo, {
     required String content,
     String? description,
+    int? assigneeId,
     required DateTime day,
     int? minute,
     required List<TodoSubtaskDraft> subtasks,
@@ -260,6 +288,8 @@ final class AppController extends ChangeNotifier {
         content: content,
         description: description,
         updateDescription: true,
+        assigneeId: assigneeId,
+        updateAssignee: true,
         day: day,
         minute: minute,
         updateMinute: true,
@@ -350,6 +380,7 @@ final class AppController extends ChangeNotifier {
   Future<void> createRegularTodo({
     required String content,
     String? description,
+    int? assigneeId,
     int? sectionId,
   }) async {
     final list = selectedList;
@@ -359,6 +390,7 @@ final class AppController extends ChangeNotifier {
         listId: list.id,
         content: content,
         description: description,
+        assigneeId: assigneeId ?? defaultAssigneeId,
         sectionId: sectionId,
       );
       await _loadSelectedContent();
@@ -369,6 +401,7 @@ final class AppController extends ChangeNotifier {
     RegularTodoModel todo, {
     required String content,
     String? description,
+    int? assigneeId,
     int? sectionId,
     required List<TodoSubtaskDraft> subtasks,
   }) async {
@@ -378,6 +411,8 @@ final class AppController extends ChangeNotifier {
         content: content,
         description: description,
         updateDescription: true,
+        assigneeId: assigneeId,
+        updateAssignee: true,
         sectionId: sectionId,
         updateSection: true,
       );

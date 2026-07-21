@@ -5,6 +5,7 @@ typedef NewListValue = ({String name, bool isLocked});
 typedef ScheduledTodoValue = ({
   String content,
   String? description,
+  int? assigneeId,
   DateTime day,
   int? minute,
   List<TodoSubtaskDraft> subtasks,
@@ -12,11 +13,12 @@ typedef ScheduledTodoValue = ({
 typedef RegularTodoValue = ({
   String content,
   String? description,
+  int? assigneeId,
   int? sectionId,
   List<TodoSubtaskDraft> subtasks,
 });
 
-const _todoTitleMaxLength = 20;
+const _todoTitleMaxLength = 30;
 
 Future<String?> showTextDialog(
   BuildContext context, {
@@ -173,12 +175,18 @@ Future<String?> showPasswordDialog(
 
 Future<ScheduledTodoValue?> showScheduledTodoDialog(
   BuildContext context, {
+  required List<PersonModel> persons,
   ScheduledTodoModel? todo,
   DateTime? initialDay,
+  int? initialAssigneeId,
   List<TodoSubtaskDraft> initialSubtasks = const [],
 }) {
   var content = todo?.content ?? '';
   var description = todo?.description ?? '';
+  var assigneeId =
+      todo?.assigneeId ??
+      initialAssigneeId ??
+      (persons.isEmpty ? null : persons.first.id);
   final subtasks = [...initialSubtasks];
   final subtaskEndKey = GlobalKey();
   var day = todo?.scheduledDay ?? initialDay ?? DateTime.now();
@@ -215,6 +223,22 @@ Future<ScheduledTodoValue?> showScheduledTodoDialog(
                 ),
                 onChanged: (value) => description = value,
               ),
+              if (persons.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<int>(
+                  initialValue: assigneeId,
+                  decoration: const InputDecoration(labelText: 'Assigned to'),
+                  items: persons
+                      .map(
+                        (person) => DropdownMenuItem(
+                          value: person.id,
+                          child: Text(person.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => assigneeId = value),
+                ),
+              ],
               const SizedBox(height: 12),
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -270,6 +294,7 @@ Future<ScheduledTodoValue?> showScheduledTodoDialog(
                 description: description.trim().isEmpty
                     ? null
                     : description.trim(),
+                assigneeId: assigneeId,
                 day: day,
                 minute: time == null ? null : time!.hour * 60 + time!.minute,
                 subtasks: [...subtasks],
@@ -286,13 +311,19 @@ Future<ScheduledTodoValue?> showScheduledTodoDialog(
 Future<RegularTodoValue?> showRegularTodoDialog(
   BuildContext context, {
   required List<ListSectionModel> sections,
+  required List<PersonModel> persons,
   RegularTodoModel? todo,
   int? initialSectionId,
+  int? initialAssigneeId,
   Future<void> Function()? onDelete,
   List<TodoSubtaskDraft> initialSubtasks = const [],
 }) {
   var content = todo?.content ?? '';
   var description = todo?.description ?? '';
+  var assigneeId =
+      todo?.assigneeId ??
+      initialAssigneeId ??
+      (persons.isEmpty ? null : persons.first.id);
   var sectionId = todo?.sectionId ?? initialSectionId;
   final subtasks = [...initialSubtasks];
   final subtaskEndKey = GlobalKey();
@@ -322,6 +353,22 @@ Future<RegularTodoValue?> showRegularTodoDialog(
                 ),
                 onChanged: (value) => description = value,
               ),
+              if (persons.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<int>(
+                  initialValue: assigneeId,
+                  decoration: const InputDecoration(labelText: 'Assigned to'),
+                  items: persons
+                      .map(
+                        (person) => DropdownMenuItem(
+                          value: person.id,
+                          child: Text(person.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => assigneeId = value),
+                ),
+              ],
               if (sections.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int?>(
@@ -378,6 +425,7 @@ Future<RegularTodoValue?> showRegularTodoDialog(
                 description: description.trim().isEmpty
                     ? null
                     : description.trim(),
+                assigneeId: assigneeId,
                 sectionId: sectionId,
                 subtasks: [...subtasks],
               ));
