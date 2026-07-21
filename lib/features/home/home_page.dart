@@ -4,6 +4,7 @@ import 'package:better_todo/features/regular/regular_list_page.dart';
 import 'package:better_todo/features/schedule/schedule_page.dart';
 import 'package:better_todo/theme/app_colors.dart';
 import 'package:better_todo/widgets/app_dialogs.dart';
+import 'package:better_todo/widgets/pride_face.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
@@ -44,11 +45,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       animation: controller,
       builder: (context, _) {
         final list = controller.selectedList;
+        final todayPride = controller.prideForDay(DateTime.now());
         return Scaffold(
           drawer: ListDrawer(controller: controller),
           appBar: AppBar(
             title: Text(list?.name ?? 'TODO'),
             actions: [
+              IconButton(
+                tooltip: 'Proud of me',
+                onPressed: () => _setPride(context),
+                icon: todayPride == null
+                    ? const Icon(Icons.favorite_border)
+                    : PrideFace(answer: todayPride),
+              ),
               if (list?.isScheduled ?? false)
                 IconButton(
                   tooltip: controller.scheduleView == ScheduleView.list
@@ -115,6 +124,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return list.isScheduled
         ? SchedulePage(controller: controller)
         : RegularListPage(controller: controller);
+  }
+
+  Future<void> _setPride(BuildContext context) async {
+    final answer = await showPrideDialog(
+      context,
+      current: controller.prideForDay(DateTime.now()),
+    );
+    if (answer != null) await controller.setPrideForToday(answer);
   }
 
   Future<void> _addScheduledTodo(BuildContext context) async {

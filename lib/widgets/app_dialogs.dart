@@ -1,4 +1,5 @@
 import 'package:better_todo/data/models/todo_models.dart';
+import 'package:better_todo/widgets/pride_face.dart';
 import 'package:flutter/material.dart';
 
 typedef NewListValue = ({String name, bool isLocked});
@@ -84,6 +85,82 @@ Future<bool> showConfirmDialog(
         ),
       ) ??
       false;
+}
+
+Future<PrideAnswer?> showPrideDialog(
+  BuildContext context, {
+  PrideAnswer? current,
+}) {
+  return showDialog<PrideAnswer>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Proud of me today?'),
+      content: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _PrideChoice(
+            answer: PrideAnswer.yes,
+            label: 'Yes',
+            selected: current == PrideAnswer.yes,
+          ),
+          _PrideChoice(
+            answer: PrideAnswer.middle,
+            label: 'Kind of',
+            selected: current == PrideAnswer.middle,
+          ),
+          _PrideChoice(
+            answer: PrideAnswer.no,
+            label: 'No',
+            selected: current == PrideAnswer.no,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Cancel'),
+        ),
+      ],
+    ),
+  );
+}
+
+final class _PrideChoice extends StatelessWidget {
+  const _PrideChoice({
+    required this.answer,
+    required this.label,
+    required this.selected,
+  });
+
+  final PrideAnswer answer;
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => Navigator.pop(context, answer),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: selected ? Border.all(width: 2) : null,
+              ),
+              child: PrideFace(answer: answer, size: 36),
+            ),
+            const SizedBox(height: 6),
+            Text(label),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 Future<NewListValue?> showNewListDialog(BuildContext context) {

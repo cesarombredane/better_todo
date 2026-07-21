@@ -134,6 +134,23 @@ final class TodoRepository {
     });
   }
 
+  Future<List<DailyPrideModel>> getDailyPride() async {
+    final database = await _db;
+    final rows = await database.query('daily_pride', orderBy: 'day ASC');
+    return rows.map(DailyPrideModel.fromMap).toList();
+  }
+
+  Future<void> setDailyPride(DateTime day, PrideAnswer answer) async {
+    final database = await _db;
+    final dayValue = databaseDay(day);
+    await database.insert('daily_pride', {
+      'day': dayValue,
+      'answer': answer.name,
+      'created_at': _now,
+      'updated_at': _now,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
   Future<List<ListSectionModel>> getSections(int listId) async {
     final database = await _db;
     final rows = await database.query(

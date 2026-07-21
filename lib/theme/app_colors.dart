@@ -9,6 +9,8 @@ abstract final class AppColors {
   // Status indicators.
   static const locked = Color(0xFFD86666);
   static const unlocked = Color(0xFF68C28A);
+  static const moodNegative = Color(0xFFE36B6B);
+  static const moodPositive = Color(0xFF72D99A);
 
   // Dark surfaces.
   static const background = Color(0xFF11110F);

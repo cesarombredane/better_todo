@@ -17,6 +17,7 @@ final class AppController extends ChangeNotifier {
   List<RegularTodoModel> regularTodos = [];
   Map<int, List<TodoSubtaskModel>> scheduledSubtasks = {};
   Map<int, List<TodoSubtaskModel>> regularSubtasks = {};
+  Map<String, PrideAnswer> dailyPride = {};
 
   int? selectedListId;
   String? password;
@@ -50,6 +51,8 @@ final class AppController extends ChangeNotifier {
     await _run(() async {
       password = await _repository.getPassword();
       persons = await _repository.getPersons();
+      final prideEntries = await _repository.getDailyPride();
+      dailyPride = {for (final entry in prideEntries) entry.day: entry.answer};
       lists = await _repository.getLists();
       if (!lists.any((list) => list.isScheduled)) {
         await _repository.createList(
@@ -154,6 +157,15 @@ final class AppController extends ChangeNotifier {
       await _repository.createPerson(normalized);
       persons = await _repository.getPersons();
     });
+  }
+
+  PrideAnswer? prideForDay(DateTime day) => dailyPride[databaseDay(day)];
+
+  Future<void> setPrideForToday(PrideAnswer answer) async {
+    final today = _dateOnly(DateTime.now());
+    dailyPride = {...dailyPride, databaseDay(today): answer};
+    notifyListeners();
+    await _run(() => _repository.setDailyPride(today, answer));
   }
 
   Future<void> renameList(TodoListModel list, String name) async {

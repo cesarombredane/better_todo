@@ -65,6 +65,31 @@ final class PersonModel {
   final bool isOwner;
 }
 
+enum PrideAnswer {
+  yes,
+  middle,
+  no;
+
+  static PrideAnswer fromDatabase(String value) => switch (value) {
+    'yes' => PrideAnswer.yes,
+    'middle' => PrideAnswer.middle,
+    'no' => PrideAnswer.no,
+    _ => throw ArgumentError.value(value, 'value', 'Unknown pride answer'),
+  };
+}
+
+final class DailyPrideModel {
+  const DailyPrideModel({required this.day, required this.answer});
+
+  factory DailyPrideModel.fromMap(Map<String, Object?> map) => DailyPrideModel(
+    day: map['day']! as String,
+    answer: PrideAnswer.fromDatabase(map['answer']! as String),
+  );
+
+  final String day;
+  final PrideAnswer answer;
+}
+
 final class ScheduledTodoModel {
   const ScheduledTodoModel({
     required this.id,

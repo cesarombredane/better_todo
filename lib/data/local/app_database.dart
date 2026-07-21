@@ -7,7 +7,7 @@ final class AppDatabase {
   static final AppDatabase instance = AppDatabase._();
 
   static const _fileName = 'better_todo.db';
-  static const _version = 5;
+  static const _version = 6;
   static const _createTodoSubtasks = '''
     CREATE TABLE todo_subtasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,6 +82,16 @@ final class AppDatabase {
       'created_at': now,
       'updated_at': now,
     });
+
+    batch.execute('''
+      CREATE TABLE daily_pride (
+        day TEXT PRIMARY KEY,
+        answer TEXT NOT NULL
+          CHECK (answer IN ('yes', 'middle', 'no')),
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    ''');
 
     batch.execute('''
       CREATE TABLE todo_lists (
@@ -228,6 +238,17 @@ final class AppDatabase {
       );
       await database.update('scheduled_todos', {'assignee_id': ownerId});
       await database.update('regular_todos', {'assignee_id': ownerId});
+    }
+    if (oldVersion < 6) {
+      await database.execute('''
+        CREATE TABLE daily_pride (
+          day TEXT PRIMARY KEY,
+          answer TEXT NOT NULL
+            CHECK (answer IN ('yes', 'middle', 'no')),
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        )
+      ''');
     }
   }
 

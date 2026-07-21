@@ -3,6 +3,7 @@ import 'package:better_todo/data/models/todo_models.dart';
 import 'package:better_todo/theme/app_colors.dart';
 import 'package:better_todo/widgets/app_dialogs.dart';
 import 'package:better_todo/widgets/assignee_label.dart';
+import 'package:better_todo/widgets/pride_face.dart';
 import 'package:better_todo/widgets/subtask_summary.dart';
 import 'package:flutter/material.dart';
 
@@ -343,6 +344,9 @@ final class _CalendarView extends StatelessWidget {
             final selected =
                 databaseDay(day) == databaseDay(controller.selectedCalendarDay);
             final isToday = databaseDay(day) == databaseDay(today);
+            final pride = day.isBefore(today)
+                ? controller.prideForDay(day)
+                : null;
             final currentMonth = day.month == month.month;
             return InkWell(
               borderRadius: BorderRadius.circular(24),
@@ -374,16 +378,28 @@ final class _CalendarView extends StatelessWidget {
                             : AppColors.textDisabled,
                       ),
                     ),
-                    if (count > 0)
-                      Container(
-                        width: 5,
-                        height: 5,
-                        margin: const EdgeInsets.only(top: 3),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? AppColors.background
-                              : AppColors.yellow,
-                          shape: BoxShape.circle,
+                    if (pride != null || count > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (pride != null)
+                              PrideFace(answer: pride, size: 15),
+                            if (pride != null && count > 0)
+                              const SizedBox(width: 3),
+                            if (count > 0)
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: selected
+                                      ? AppColors.background
+                                      : AppColors.yellow,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                   ],
