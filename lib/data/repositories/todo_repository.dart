@@ -255,6 +255,17 @@ final class TodoRepository {
     return rows.map(ScheduledTodoModel.fromMap).toList();
   }
 
+  Future<List<ScheduledTodoModel>> getAllScheduledTodos(int listId) async {
+    final database = await _db;
+    final rows = await database.query(
+      'scheduled_todos',
+      where: 'list_id = ?',
+      whereArgs: [listId],
+      orderBy: 'scheduled_day ASC, is_completed ASC, sort_position ASC, id ASC',
+    );
+    return rows.map(ScheduledTodoModel.fromMap).toList();
+  }
+
   Future<int> createScheduledTodo({
     required int listId,
     required String content,

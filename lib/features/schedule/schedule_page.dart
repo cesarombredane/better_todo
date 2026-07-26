@@ -5,6 +5,7 @@ import 'package:better_todo/widgets/app_dialogs.dart';
 import 'package:better_todo/widgets/assignee_label.dart';
 import 'package:better_todo/widgets/pride_face.dart';
 import 'package:better_todo/widgets/subtask_summary.dart';
+import 'package:better_todo/widgets/todo_export.dart';
 import 'package:flutter/material.dart';
 
 final class SchedulePage extends StatelessWidget {
@@ -92,6 +93,18 @@ final class _DaySection extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
+                    ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      tooltip: 'Copy this day',
+                      onPressed: () => copyTodoText(
+                        formatScheduledGroupText(
+                          title: formatExportDate(day),
+                          todos: todos,
+                          subtasks: controller.scheduledSubtasks,
+                        ),
+                      ),
+                      icon: const Icon(Icons.copy_outlined, size: 20),
                     ),
                     IconButton(
                       visualDensity: VisualDensity.compact,
@@ -409,9 +422,32 @@ final class _CalendarView extends StatelessWidget {
           },
         ),
         const SizedBox(height: 20),
-        Text(
-          _dayLabel(controller.selectedCalendarDay),
-          style: Theme.of(context).textTheme.titleMedium,
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                _dayLabel(controller.selectedCalendarDay),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            IconButton(
+              tooltip: 'Copy this day',
+              onPressed: () => copyTodoText(
+                formatScheduledGroupText(
+                  title: formatExportDate(controller.selectedCalendarDay),
+                  todos: selectedTodos,
+                  subtasks: controller.scheduledSubtasks,
+                ),
+              ),
+              icon: const Icon(Icons.copy_outlined),
+            ),
+            IconButton(
+              tooltip: 'Add task on this day',
+              onPressed: () =>
+                  _createForDay(context, controller.selectedCalendarDay),
+              icon: const Icon(Icons.add),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         if (selectedTodos.isEmpty)
@@ -433,6 +469,24 @@ final class _CalendarView extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  Future<void> _createForDay(BuildContext context, DateTime day) async {
+    final value = await showScheduledTodoDialog(
+      context,
+      persons: controller.persons,
+      initialDay: day,
+      initialAssigneeId: controller.defaultAssigneeId,
+    );
+    if (value != null) {
+      await controller.createScheduledTodo(
+        content: value.content,
+        description: value.description,
+        assigneeId: value.assigneeId,
+        day: value.day,
+        minute: value.minute,
+      );
+    }
   }
 }
 

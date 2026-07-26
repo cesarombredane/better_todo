@@ -4,6 +4,7 @@ import 'package:better_todo/theme/app_colors.dart';
 import 'package:better_todo/widgets/app_dialogs.dart';
 import 'package:better_todo/widgets/assignee_label.dart';
 import 'package:better_todo/widgets/subtask_summary.dart';
+import 'package:better_todo/widgets/todo_export.dart';
 import 'package:flutter/material.dart';
 
 final class RegularListPage extends StatelessWidget {
@@ -96,6 +97,17 @@ final class _SectionCard extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                IconButton(
+                  tooltip: 'Copy section',
+                  onPressed: () => copyTodoText(
+                    formatRegularGroupText(
+                      title: section.name,
+                      todos: todos,
+                      subtasks: controller.regularSubtasks,
+                    ),
+                  ),
+                  icon: const Icon(Icons.copy_outlined),
+                ),
                 IconButton(
                   tooltip: 'Add todo',
                   onPressed: () => _addTodo(context),
@@ -202,10 +214,26 @@ final class _TodoGroup extends StatelessWidget {
                 letterSpacing: 0.8,
               ),
             ),
-            trailing: IconButton(
-              tooltip: 'Add todo',
-              onPressed: () => _addTodo(context),
-              icon: const Icon(Icons.add),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: 'Copy section',
+                  onPressed: () => copyTodoText(
+                    formatRegularGroupText(
+                      title: title,
+                      todos: todos,
+                      subtasks: controller.regularSubtasks,
+                    ),
+                  ),
+                  icon: const Icon(Icons.copy_outlined),
+                ),
+                IconButton(
+                  tooltip: 'Add todo',
+                  onPressed: () => _addTodo(context),
+                  icon: const Icon(Icons.add),
+                ),
+              ],
             ),
           ),
           _TodoList(sectionId: sectionId, todos: todos, controller: controller),

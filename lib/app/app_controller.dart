@@ -1,5 +1,6 @@
 import 'package:better_todo/data/models/todo_models.dart';
 import 'package:better_todo/data/repositories/todo_repository.dart';
+import 'package:better_todo/widgets/todo_export.dart';
 import 'package:flutter/foundation.dart';
 
 enum ScheduleView { list, calendar }
@@ -222,6 +223,62 @@ final class AppController extends ChangeNotifier {
       await _repository.reorderLists(reordered.map((item) => item.id).toList());
       await _reloadLists();
     });
+  }
+
+  Future<String?> exportListText(TodoListModel list) async {
+    if (list.isLocked && !isUnlocked) return null;
+
+    if (list.isScheduled) {
+      final todos = await _repository.getAllScheduledTodos(list.id);
+      final allSubtasks = await _repository.getScheduledSubtasksForList(
+        list.id,
+      );
+      final subtasks = _groupSubtasks(
+        allSubtasks,
+        (subtask) => subtask.scheduledTodoId,
+      );
+      final days = <String, List<ScheduledTodoModel>>{};
+      for (final todo in todos) {
+        (days[databaseDay(todo.scheduledDay)] ??= []).add(todo);
+      }
+      final groups = days.entries.map(
+        (entry) => formatScheduledGroupText(
+          title: formatExportDate(entry.value.first.scheduledDay),
+          todos: entry.value,
+          subtasks: subtasks,
+        ),
+      );
+      return ['# ${list.name}', ...groups.map((group) => '\n\n$group')].join();
+    }
+
+    final listSections = await _repository.getSections(list.id);
+    final todos = await _repository.getRegularTodos(list.id);
+    final allSubtasks = await _repository.getRegularSubtasksForList(list.id);
+    final subtasks = _groupSubtasks(
+      allSubtasks,
+      (subtask) => subtask.regularTodoId,
+    );
+    final groups = <String>[];
+    final unsectioned = todos.where((todo) => todo.sectionId == null);
+    if (unsectioned.isNotEmpty) {
+      groups.add(
+        formatRegularGroupText(
+          title: 'NO SECTION',
+          todos: unsectioned,
+          subtasks: subtasks,
+        ),
+      );
+    }
+    for (final section in listSections) {
+      groups.add(
+        formatRegularGroupText(
+          title: section.name,
+          todos: todos.where((todo) => todo.sectionId == section.id),
+          subtasks: subtasks,
+        ),
+      );
+    }
+    return ['# ${list.name}', ...groups.map((group) => '\n\n$group')].join();
   }
 
   Future<void> _reloadLists() async {

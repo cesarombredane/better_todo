@@ -1,5 +1,6 @@
 import 'package:better_todo/data/models/todo_models.dart';
 import 'package:better_todo/widgets/pride_face.dart';
+import 'package:better_todo/widgets/todo_export.dart';
 import 'package:flutter/material.dart';
 
 typedef NewListValue = ({String name, bool isLocked});
@@ -278,7 +279,28 @@ Future<ScheduledTodoValue?> showScheduledTodoDialog(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
-        title: Text(todo == null ? 'New scheduled task' : 'Edit task'),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(todo == null ? 'New scheduled task' : 'Edit task'),
+            ),
+            if (todo != null)
+              IconButton(
+                tooltip: 'Copy task',
+                onPressed: () => copyTodoText(
+                  formatTodoText(
+                    title: formatScheduledTodoTitle(
+                      content,
+                      time == null ? null : time!.hour * 60 + time!.minute,
+                    ),
+                    description: description,
+                    subtasks: subtasks,
+                  ),
+                ),
+                icon: const Icon(Icons.copy_outlined),
+              ),
+          ],
+        ),
         content: SizedBox(
           width: 400,
           child: _DialogScrollView(
@@ -412,7 +434,23 @@ Future<RegularTodoValue?> showRegularTodoDialog(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
-        title: Text(todo == null ? 'New todo' : 'Edit todo'),
+        title: Row(
+          children: [
+            Expanded(child: Text(todo == null ? 'New todo' : 'Edit todo')),
+            if (todo != null)
+              IconButton(
+                tooltip: 'Copy todo',
+                onPressed: () => copyTodoText(
+                  formatTodoText(
+                    title: content,
+                    description: description,
+                    subtasks: subtasks,
+                  ),
+                ),
+                icon: const Icon(Icons.copy_outlined),
+              ),
+          ],
+        ),
         content: SizedBox(
           width: 400,
           child: _DialogScrollView(

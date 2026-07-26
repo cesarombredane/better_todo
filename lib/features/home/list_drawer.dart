@@ -2,6 +2,7 @@ import 'package:better_todo/app/app_controller.dart';
 import 'package:better_todo/data/models/todo_models.dart';
 import 'package:better_todo/theme/app_colors.dart';
 import 'package:better_todo/widgets/app_dialogs.dart';
+import 'package:better_todo/widgets/todo_export.dart';
 import 'package:flutter/material.dart';
 
 final class ListDrawer extends StatelessWidget {
@@ -313,6 +314,11 @@ final class _ListEntry extends StatelessWidget {
             child: const Text('Rename'),
           ),
           PopupMenuItem(
+            value: 'copy',
+            enabled: !list.isLocked || controller.isUnlocked,
+            child: const Text('Copy list'),
+          ),
+          PopupMenuItem(
             value: 'pin',
             child: Text(list.isPinned ? 'Unpin' : 'Pin'),
           ),
@@ -347,6 +353,12 @@ final class _ListEntry extends StatelessWidget {
           initialValue: list.name,
         );
         if (value != null) await controller.renameList(list, value);
+      case 'copy':
+        if (list.isLocked && !controller.isUnlocked) return;
+        final text = await controller.exportListText(list);
+        if (text != null) {
+          await copyTodoText(text);
+        }
       case 'pin':
         await controller.togglePinned(list);
       case 'lock':
