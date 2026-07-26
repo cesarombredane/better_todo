@@ -279,84 +279,87 @@ Future<ScheduledTodoValue?> showScheduledTodoDialog(
     builder: (dialogContext) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
         title: Text(todo == null ? 'New scheduled task' : 'Edit task'),
-        content: _DialogScrollView(
-          key: scrollKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                initialValue: content,
-                autofocus: todo == null,
-                maxLength: _todoTitleMaxLength,
-                maxLines: 1,
-                decoration: const InputDecoration(labelText: 'Title'),
-                onChanged: (value) => content = value,
-              ),
-              TextFormField(
-                initialValue: description,
-                maxLines: 4,
-                minLines: 1,
-                decoration: const InputDecoration(
-                  labelText: 'Description (optional)',
+        content: SizedBox(
+          width: 400,
+          child: _DialogScrollView(
+            key: scrollKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: content,
+                  autofocus: todo == null,
+                  maxLength: _todoTitleMaxLength,
+                  maxLines: 1,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                  onChanged: (value) => content = value,
                 ),
-                onChanged: (value) => description = value,
-              ),
-              if (persons.isNotEmpty) ...[
+                TextFormField(
+                  initialValue: description,
+                  maxLines: 4,
+                  minLines: 1,
+                  decoration: const InputDecoration(
+                    labelText: 'Description (optional)',
+                  ),
+                  onChanged: (value) => description = value,
+                ),
+                if (persons.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int>(
+                    initialValue: assigneeId,
+                    decoration: const InputDecoration(labelText: 'Assigned to'),
+                    items: persons
+                        .map(
+                          (person) => DropdownMenuItem(
+                            value: person.id,
+                            child: Text(person.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) => setState(() => assigneeId = value),
+                  ),
+                ],
                 const SizedBox(height: 12),
-                DropdownButtonFormField<int>(
-                  initialValue: assigneeId,
-                  decoration: const InputDecoration(labelText: 'Assigned to'),
-                  items: persons
-                      .map(
-                        (person) => DropdownMenuItem(
-                          value: person.id,
-                          child: Text(person.name),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today_outlined),
+                  title: Text(_displayDate(day)),
+                  onTap: () async {
+                    final selected = await showDatePicker(
+                      context: context,
+                      initialDate: day,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2100),
+                    );
+                    if (selected != null) setState(() => day = selected);
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.schedule_outlined),
+                  title: Text(time?.format(context) ?? 'No specific time'),
+                  trailing: time == null
+                      ? null
+                      : IconButton(
+                          onPressed: () => setState(() => time = null),
+                          icon: const Icon(Icons.close),
                         ),
-                      )
-                      .toList(),
-                  onChanged: (value) => setState(() => assigneeId = value),
+                  onTap: () async {
+                    final selected = await showTimePicker(
+                      context: context,
+                      initialTime: time ?? TimeOfDay.now(),
+                    );
+                    if (selected != null) setState(() => time = selected);
+                  },
                 ),
+                if (todo != null)
+                  _SubtaskEditor(
+                    subtasks: subtasks,
+                    setState: setState,
+                    onAdded: () => scrollKey.currentState?.scrollToBottom(),
+                  ),
               ],
-              const SizedBox(height: 12),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.calendar_today_outlined),
-                title: Text(_displayDate(day)),
-                onTap: () async {
-                  final selected = await showDatePicker(
-                    context: context,
-                    initialDate: day,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2100),
-                  );
-                  if (selected != null) setState(() => day = selected);
-                },
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.schedule_outlined),
-                title: Text(time?.format(context) ?? 'No specific time'),
-                trailing: time == null
-                    ? null
-                    : IconButton(
-                        onPressed: () => setState(() => time = null),
-                        icon: const Icon(Icons.close),
-                      ),
-                onTap: () async {
-                  final selected = await showTimePicker(
-                    context: context,
-                    initialTime: time ?? TimeOfDay.now(),
-                  );
-                  if (selected != null) setState(() => time = selected);
-                },
-              ),
-              if (todo != null)
-                _SubtaskEditor(
-                  subtasks: subtasks,
-                  setState: setState,
-                  onAdded: () => scrollKey.currentState?.scrollToBottom(),
-                ),
-            ],
+            ),
           ),
         ),
         actions: [
@@ -410,71 +413,74 @@ Future<RegularTodoValue?> showRegularTodoDialog(
     builder: (dialogContext) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
         title: Text(todo == null ? 'New todo' : 'Edit todo'),
-        content: _DialogScrollView(
-          key: scrollKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                initialValue: content,
-                autofocus: todo == null,
-                maxLength: _todoTitleMaxLength,
-                maxLines: 1,
-                decoration: const InputDecoration(labelText: 'Title'),
-                onChanged: (value) => content = value,
-              ),
-              TextFormField(
-                initialValue: description,
-                maxLines: 4,
-                minLines: 1,
-                decoration: const InputDecoration(
-                  labelText: 'Description (optional)',
+        content: SizedBox(
+          width: 400,
+          child: _DialogScrollView(
+            key: scrollKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: content,
+                  autofocus: todo == null,
+                  maxLength: _todoTitleMaxLength,
+                  maxLines: 1,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                  onChanged: (value) => content = value,
                 ),
-                onChanged: (value) => description = value,
-              ),
-              if (persons.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                DropdownButtonFormField<int>(
-                  initialValue: assigneeId,
-                  decoration: const InputDecoration(labelText: 'Assigned to'),
-                  items: persons
-                      .map(
-                        (person) => DropdownMenuItem(
-                          value: person.id,
-                          child: Text(person.name),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) => setState(() => assigneeId = value),
+                TextFormField(
+                  initialValue: description,
+                  maxLines: 4,
+                  minLines: 1,
+                  decoration: const InputDecoration(
+                    labelText: 'Description (optional)',
+                  ),
+                  onChanged: (value) => description = value,
                 ),
-              ],
-              if (sections.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                DropdownButtonFormField<int?>(
-                  initialValue: sectionId,
-                  decoration: const InputDecoration(labelText: 'Section'),
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('No section'),
-                    ),
-                    ...sections.map(
-                      (section) => DropdownMenuItem(
-                        value: section.id,
-                        child: Text(section.name),
+                if (persons.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int>(
+                    initialValue: assigneeId,
+                    decoration: const InputDecoration(labelText: 'Assigned to'),
+                    items: persons
+                        .map(
+                          (person) => DropdownMenuItem(
+                            value: person.id,
+                            child: Text(person.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) => setState(() => assigneeId = value),
+                  ),
+                ],
+                if (sections.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int?>(
+                    initialValue: sectionId,
+                    decoration: const InputDecoration(labelText: 'Section'),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('No section'),
                       ),
-                    ),
-                  ],
-                  onChanged: (value) => setState(() => sectionId = value),
-                ),
+                      ...sections.map(
+                        (section) => DropdownMenuItem(
+                          value: section.id,
+                          child: Text(section.name),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) => setState(() => sectionId = value),
+                  ),
+                ],
+                if (todo != null)
+                  _SubtaskEditor(
+                    subtasks: subtasks,
+                    setState: setState,
+                    onAdded: () => scrollKey.currentState?.scrollToBottom(),
+                  ),
               ],
-              if (todo != null)
-                _SubtaskEditor(
-                  subtasks: subtasks,
-                  setState: setState,
-                  onAdded: () => scrollKey.currentState?.scrollToBottom(),
-                ),
-            ],
+            ),
           ),
         ),
         actions: [
@@ -549,42 +555,56 @@ final class _SubtaskEditor extends StatelessWidget {
             ),
           ],
         ),
-        for (final entry in subtasks.indexed)
-          Row(
-            key: ValueKey(entry.$1),
-            children: [
-              Checkbox(
-                value: entry.$2.isCompleted,
-                onChanged: (value) => setState(() {
-                  subtasks[entry.$1] = TodoSubtaskDraft(
-                    content: entry.$2.content,
-                    isCompleted: value ?? false,
-                  );
-                }),
-              ),
-              Expanded(
-                child: InkWell(
-                  onTap: () => _edit(context, entry.$1),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      entry.$2.content,
-                      style: TextStyle(
-                        decoration: entry.$2.isCompleted
-                            ? TextDecoration.lineThrough
-                            : null,
+        SizedBox(
+          width: double.maxFinite,
+          child: ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: subtasks.length,
+            onReorderItem: (oldIndex, newIndex) => setState(() {
+              final subtask = subtasks.removeAt(oldIndex);
+              subtasks.insert(newIndex, subtask);
+            }),
+            itemBuilder: (context, index) {
+              final subtask = subtasks[index];
+              return Row(
+                key: ObjectKey(subtask),
+                children: [
+                  Checkbox(
+                    value: subtask.isCompleted,
+                    onChanged: (value) => setState(() {
+                      subtasks[index] = TodoSubtaskDraft(
+                        content: subtask.content,
+                        isCompleted: value ?? false,
+                      );
+                    }),
+                  ),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => _edit(context, index),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          subtask.content,
+                          style: TextStyle(
+                            decoration: subtask.isCompleted
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Remove subtask',
-                onPressed: () => setState(() => subtasks.removeAt(entry.$1)),
-                icon: const Icon(Icons.close, size: 18),
-              ),
-            ],
+                  IconButton(
+                    tooltip: 'Remove subtask',
+                    onPressed: () => setState(() => subtasks.removeAt(index)),
+                    icon: const Icon(Icons.close, size: 18),
+                  ),
+                ],
+              );
+            },
           ),
+        ),
       ],
     );
   }
