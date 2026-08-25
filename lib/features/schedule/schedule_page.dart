@@ -159,6 +159,7 @@ final class _DaySection extends StatelessWidget {
         assigneeId: value.assigneeId,
         day: value.day,
         minute: value.minute,
+        subtasks: value.subtasks,
       );
     }
   }
@@ -485,6 +486,7 @@ final class _CalendarView extends StatelessWidget {
         assigneeId: value.assigneeId,
         day: value.day,
         minute: value.minute,
+        subtasks: value.subtasks,
       );
     }
   }

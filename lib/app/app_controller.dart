@@ -335,11 +335,12 @@ final class AppController extends ChangeNotifier {
     int? assigneeId,
     required DateTime day,
     int? minute,
+    required List<TodoSubtaskDraft> subtasks,
   }) async {
     final list = selectedList;
     if (list == null) return;
     await _run(() async {
-      await _repository.createScheduledTodo(
+      final todoId = await _repository.createScheduledTodo(
         listId: list.id,
         content: content,
         description: description,
@@ -347,6 +348,7 @@ final class AppController extends ChangeNotifier {
         day: day,
         minute: minute,
       );
+      await _repository.replaceScheduledSubtasks(todoId, subtasks);
       await _loadSelectedContent();
     });
   }
@@ -460,17 +462,19 @@ final class AppController extends ChangeNotifier {
     String? description,
     int? assigneeId,
     int? sectionId,
+    required List<TodoSubtaskDraft> subtasks,
   }) async {
     final list = selectedList;
     if (list == null) return;
     await _run(() async {
-      await _repository.createRegularTodo(
+      final todoId = await _repository.createRegularTodo(
         listId: list.id,
         content: content,
         description: description,
         assigneeId: assigneeId ?? defaultAssigneeId,
         sectionId: sectionId,
       );
+      await _repository.replaceRegularSubtasks(todoId, subtasks);
       await _loadSelectedContent();
     });
   }

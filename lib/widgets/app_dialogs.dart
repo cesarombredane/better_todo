@@ -374,12 +374,11 @@ Future<ScheduledTodoValue?> showScheduledTodoDialog(
                     if (selected != null) setState(() => time = selected);
                   },
                 ),
-                if (todo != null)
-                  _SubtaskEditor(
-                    subtasks: subtasks,
-                    setState: setState,
-                    onAdded: () => scrollKey.currentState?.scrollToBottom(),
-                  ),
+                _SubtaskEditor(
+                  subtasks: subtasks,
+                  setState: setState,
+                  onAdded: () => scrollKey.currentState?.scrollToBottom(),
+                ),
               ],
             ),
           ),
@@ -511,12 +510,11 @@ Future<RegularTodoValue?> showRegularTodoDialog(
                     onChanged: (value) => setState(() => sectionId = value),
                   ),
                 ],
-                if (todo != null)
-                  _SubtaskEditor(
-                    subtasks: subtasks,
-                    setState: setState,
-                    onAdded: () => scrollKey.currentState?.scrollToBottom(),
-                  ),
+                _SubtaskEditor(
+                  subtasks: subtasks,
+                  setState: setState,
+                  onAdded: () => scrollKey.currentState?.scrollToBottom(),
+                ),
               ],
             ),
           ),

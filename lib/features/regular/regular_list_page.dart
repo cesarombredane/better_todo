@@ -158,6 +158,7 @@ final class _SectionCard extends StatelessWidget {
         description: value.description,
         assigneeId: value.assigneeId,
         sectionId: value.sectionId,
+        subtasks: value.subtasks,
       );
     }
   }
@@ -264,6 +265,7 @@ final class _TodoGroup extends StatelessWidget {
         description: value.description,
         assigneeId: value.assigneeId,
         sectionId: value.sectionId,
+        subtasks: value.subtasks,
       );
     }
   }

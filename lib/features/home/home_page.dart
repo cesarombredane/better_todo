@@ -150,6 +150,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         assigneeId: value.assigneeId,
         day: value.day,
         minute: value.minute,
+        subtasks: value.subtasks,
       );
     }
   }
@@ -167,6 +168,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         description: value.description,
         assigneeId: value.assigneeId,
         sectionId: value.sectionId,
+        subtasks: value.subtasks,
       );
     }
   }
