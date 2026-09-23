@@ -1,0 +1,29 @@
+:root.dark {
+  --vp-c-brand-1: #f2dc83;
+  --vp-c-brand-2: #ffe8a0;
+  --vp-c-brand-3: #cbb45e;
+  --vp-c-brand-soft: rgba(242, 220, 131, 0.14);
+  --vp-c-bg: #151515;
+  --vp-c-bg-alt: #1d1d1d;
+  --vp-c-bg-elv: #272727;
+  --vp-c-bg-soft: #202020;
+  --vp-c-text-1: #f3f3ef;
+  --vp-c-text-2: #c9c9c1;
+  --vp-button-brand-text: #151515;
+  --vp-button-brand-hover-text: #151515;
+}
+
+.VPNavBarTitle .title {
+  color: var(--vp-c-brand-1);
+  font-weight: 750;
+  letter-spacing: 0.05em;
+}
+
+.vp-doc .mermaid {
+  overflow-x: auto;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+}

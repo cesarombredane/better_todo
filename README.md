@@ -1,197 +1,63 @@
 # Better Todo
 
-A private, offline Android application for scheduling tasks, organizing lists,
-and recording a small daily mental-health check-in. It is built with Flutter
-and distributed as an APK.
-
-The application is intended for personal use. It has no account, server,
-analytics, advertisements, or cloud synchronization. All application data is
-stored locally on the phone in SQLite.
-
-## Current status
-
-The initial application is feature-complete and ready for daily use. Future
-work will focus on fixes and improvements discovered while using it.
+Better Todo is a private, offline Android app for scheduled tasks, ordinary and protected lists, and a daily "Proud of me" check-in. It is built with Flutter and stores data on the device in SQLite. It has no account, server, analytics, advertising, or cloud sync.
 
 ## Features
 
-### Schedule
+- A permanent Schedule list with a two-week agenda, monthly calendar, optional task times, and task ordering within each day.
+- Regular lists with optional sections, drag ordering, and one pinned list at a time. Protected information lists share an unlock session that closes when the app is backgrounded.
+- Tasks with a title, optional description, subtasks, and a locally managed assignee. Deleting a person reassigns their tasks to `Me`.
+- A daily "Proud of me" answer (happy, neutral, or sad) shown on the calendar.
+- A dark Android interface and plain-text list export.
 
-- One permanent `Schedule` list, pinned by default
-- Two-week agenda and monthly calendar views
-- Dated tasks with an optional time
-- Reorderable tasks within a day
-- Calendar marker for the current day
-- Task validation with confirmation and permanent deletion
+See [behavior rules](docs/behavior.md) for precise user-visible rules and limitations.
 
-### Todos and information lists
+## Privacy and data
 
-- Regular lists for todos without a date
-- Optional reorderable sections within a list
-- Reorderable lists, sections, and todos
-- One list can be pinned at a time
-- Password-protected information lists without completion checkboxes
-- One global unlock session for every protected list
-- Automatic relocking when the application goes into the background
+Lists, tasks, subtasks, people, the password setting, and check-ins live in the local `better_todo.db` database. Protected lists are an in-app privacy barrier; their password and contents are **not encrypted**. Use device protection and backups for important data. Confirmed deletions are permanent. See the [database guide](docs/database.md).
 
-### Task details
+## Requirements
 
-- Required title of up to 50 characters
-- Optional longer description
-- Unlimited subtasks that can be edited, removed, and marked as done
-- Subtasks displayed and directly checkable from the main list
-- Optional scheduled time
-- Assignment to `Me` or another locally managed person
-- People can be created and deleted from the navigation drawer
-- Deleting a person reassigns their tasks to `Me`
+- Flutter with a Dart SDK compatible with `pubspec.yaml` (currently Dart 3.12.2 or newer within the declared major version)
+- Android SDK and a connected Android device or emulator
+- Node.js 22 or newer and npm only for the documentation website
 
-### Proud of me
-
-- One daily check-in available from the app bar
-- Green happy, yellow neutral, and red sad answers
-- The current day's answer can be changed
-- Past answers are displayed on the monthly calendar
-
-### Interface
-
-- Android-only application
-- Dark mode only
-- Centralized dark-grey, light-grey, and pastel-yellow color palette
-- Custom yellow launcher icon
-- Touch-friendly controls and confirmation dialogs for destructive actions
-
-## Data and privacy
-
-The application works completely offline. Lists, tasks, subtasks, people,
-password settings, and daily check-ins are stored in the local
-`better_todo.db` SQLite database.
-
-Locked lists provide a simple privacy barrier inside the application. The
-password and locked-list contents are not cryptographically encrypted and
-should not be used for highly sensitive information.
-
-Task validation and confirmed deletions are permanent. Because there is no
-cloud synchronization, the application database should be backed up separately
-if the data becomes important.
-
-## Technology
-
-- Flutter and Dart for the application and interface
-- Material widgets for Android UI behavior
-- `sqflite` for the local SQLite database
-- Gradle for the Android build and APK packaging
-
-Only the dependencies currently used by the application are included.
-
-## Architecture
-
-The project uses a small layered structure:
-
-```text
-lib/
-├── main.dart                       Application entry point
-├── app/
-│   ├── better_todo_app.dart       Root Material application
-│   └── app_controller.dart        UI state and application operations
-├── data/
-│   ├── local/app_database.dart    SQLite schema and migrations
-│   ├── models/todo_models.dart    Application data models
-│   └── repositories/
-│       └── todo_repository.dart   Database reads and writes
-├── features/
-│   ├── home/                      Main screen and navigation drawer
-│   ├── regular/                   Regular and protected lists
-│   └── schedule/                  Agenda and calendar views
-├── theme/                         Shared colors and Flutter theme
-└── widgets/                       Shared dialogs and display widgets
-```
-
-The interface calls `AppController`, which keeps the current UI state and
-coordinates operations. `TodoRepository` contains SQLite queries, while
-`AppDatabase` owns database creation and versioned migrations. Widgets do not
-execute SQL directly.
-
-The `android/` directory contains the native Android wrapper, Gradle build
-configuration, launcher icon, splash styling, and the minimal Flutter activity
-used to package and launch the Dart application.
-
-## Local database
-
-The main tables are:
-
-- `todo_lists` for scheduled, regular, locked, and pinned lists
-- `list_sections` for grouping regular todos
-- `scheduled_todos` and `regular_todos` for the two task types
-- `todo_subtasks` for subtasks belonging to either task type
-- `persons` for task assignment, including the protected `Me` entry
-- `daily_pride` for one mental-health check-in per day
-- `app_settings` for the local password setting
-
-Database migrations run automatically when a newer application version opens
-an existing database.
-
-## Development checks
-
-Install declared Dart dependencies after changing `pubspec.yaml`:
+## Develop and run
 
 ```bash
 flutter pub get
-```
-
-Check the source code before building:
-
-```bash
 flutter analyze
+flutter run
 ```
 
-## Run on an Android phone
-
-Enable **Developer options > Wireless debugging** on an Android 11 or newer
-phone. The phone and computer must be on the same local network.
-
-For the first connection, select **Pair device with pairing code** and run:
+For an Android 11+ phone over Wi-Fi, enable **Developer options > Wireless debugging** and keep the phone and computer on the same network. On the first connection, choose **Pair device with pairing code**:
 
 ```bash
 adb pair <phone-ip>:<pairing-port>
-```
-
-Connect using the separate address shown on the main Wireless debugging screen:
-
-```bash
 adb connect <phone-ip>:<connection-port>
 flutter run
 ```
 
-Open the side menu to create and manage lists. Scheduled lists provide agenda
-and calendar views; regular lists provide optional sections.
+The pairing and connection ports are different. Later sessions normally need only `adb connect` and `flutter run`. While Flutter runs, press `r` for hot reload, `R` for hot restart, and `q` to stop.
 
-While Flutter is running, save a Dart file or press `r` for hot reload. Press
-`R` for hot restart and `q` to stop.
-
-For later sessions, pairing is normally unnecessary. Run `adb connect` with
-the phone's current connection address, followed by `flutter run`.
-
-## Build the APK
-
-Check the phone's processor architecture:
+## Build an APK
 
 ```bash
 adb shell getprop ro.product.cpu.abi
-```
-
-Build smaller APKs containing only one processor architecture each:
-
-```bash
 flutter build apk --release --split-per-abi
 ```
 
-The APKs are created at:
+Pick the APK matching the phone architecture from `build/app/outputs/flutter-apk/`. A build without `--split-per-abi` produces a larger universal APK. The Android release build currently uses debug signing; inspect signing before wider distribution.
 
-```text
-build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
-build/app/outputs/flutter-apk/app-x86_64-release.apk
-```
+## Project layout
 
-Most modern Android phones report `arm64-v8a`; install the APK with the matching
-name. Building without `--split-per-abi` creates a larger universal APK.
+| Path                         | Responsibility                               |
+| ---------------------------- | -------------------------------------------- |
+| `lib/app/`                   | Root Flutter app and shared controller       |
+| `lib/data/`                  | Models, SQLite lifecycle, repository queries |
+| `lib/features/`              | Home, regular lists, schedule screens        |
+| `lib/theme/`, `lib/widgets/` | Shared presentation                          |
+| `android/`                   | Android host and build configuration         |
+| `docs/`                      | Guides and VitePress website                 |
+
+Read [ARCHITECTURE.md](ARCHITECTURE.md) for component boundaries, [development](docs/development.md) for contribution checks, [AGENTS.md](AGENTS.md) for agent guidance, and [docs/README.md](docs/README.md) to run the documentation site.
