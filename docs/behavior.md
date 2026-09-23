@@ -6,7 +6,7 @@ This page records current user-visible behavior. See [architecture](../ARCHITECT
 
 The app creates one permanent Schedule list when none exists. It starts pinned, but one list at a time can be pinned. The Schedule list cannot be deleted. Scheduled tasks have a required title, optional description, date, optional time, subtasks, and assignee. The agenda shows two weeks; the calendar shows a month. Tasks can be reordered within a day and moved to another day.
 
-Regular lists contain undated tasks, with optional reorderable sections. Lists, sections, and tasks can be reordered. Protected information lists hide completion checkboxes and require the shared password unlock. One successful unlock opens all protected lists for the current foreground session; backgrounding relocks them. The password and contents are not encrypted.
+Regular lists contain undated tasks, with optional reorderable sections. Lists, sections, and tasks can be reordered. Protected information lists hide completion checkboxes and require the shared password unlock. Tapping a protected list while locked opens the password dialog; a successful unlock opens that list and all protected lists for the current foreground session. Canceling or entering an incorrect password keeps the current list selected. Backgrounding relocks protected lists. The password and contents are not encrypted.
 
 Task titles are limited to 50 characters. Subtasks can be edited, removed, reordered, and checked from the list. Assignment defaults to `Me`; people are managed in the drawer. Deleting another person reassigns their tasks to `Me`.
 

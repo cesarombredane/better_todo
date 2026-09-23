@@ -165,18 +165,29 @@ final class ListDrawer extends StatelessWidget {
       return;
     }
 
-    final value = await showPasswordDialog(
-      context,
-      title: 'Unlock protected lists',
-    );
-    if (value == null || !context.mounted) return;
-    if (!controller.unlockAll(value)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Incorrect password')));
-      return;
-    }
+    await _unlockProtectedLists(context, controller);
   }
+}
+
+Future<bool> _unlockProtectedLists(
+  BuildContext context,
+  AppController controller,
+) async {
+  if (controller.password == null) {
+    return controller.unlockAll('');
+  }
+
+  final value = await showPasswordDialog(
+    context,
+    title: 'Unlock protected lists',
+  );
+  if (value == null || !context.mounted) return false;
+  if (controller.unlockAll(value)) return true;
+
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(const SnackBar(content: Text('Incorrect password')));
+  return false;
 }
 
 final class _ManagePeopleDialog extends StatefulWidget {
@@ -339,6 +350,10 @@ final class _ListEntry extends StatelessWidget {
   }
 
   Future<void> _open(BuildContext context) async {
+    if (list.isLocked && !controller.isUnlocked) {
+      final unlocked = await _unlockProtectedLists(context, controller);
+      if (!unlocked || !context.mounted) return;
+    }
     await controller.selectList(list);
     if (context.mounted) Navigator.pop(context);
   }
